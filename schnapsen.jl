@@ -171,9 +171,11 @@ mutable struct Schnapsen
 
     played_card::Card
     lock::Int
+    stichlos::Bool
 
     trickscore1::Int
     trickscore2::Int
+    lasttrick::Int
 
     call1::Int
     call2::Int
@@ -235,11 +237,14 @@ function Schnapsen(seed=0)
 
         NOCARD, # played_card
         0, # lock
+        false, # stichlos
 
-        # scores
+        # trickscores
         0,
         0,
+        0, # lasttrick
 
+        # call
         0,
         0,
 
@@ -306,8 +311,69 @@ function is_gameover(s::Schnapsen)
     if score1 ≥ 66 || score2 ≥ 66
         return true
     end
+
+    if length(s.hand1) + length(s.hand2) == 0
+        return true
+    end
+
+    return false
 end
 
+function winner(s::Schnapsen)
+    score1 = playerscore(s, 1)
+    score2 = playerscore(s, 2)
+
+    if score1 ≥ 66
+        return 1
+    end
+    if score2 ≥ 66
+        return 2
+    end
+
+    if score1 < 66 && s.lock == 1
+        return 2
+    end
+    if score2 < 66 && s.lock == 2
+        return 1
+    end
+
+    if score1 < 66 && score2 < 66
+        return s.lasttrick
+    end
+
+    return 0
+end
+
+function winscore(s::Schnapsen)
+    w = winner(s)
+    l = w == 1 ? 2 : 1
+    wscore = playerscore(s, w)
+    lscore = playerscore(s, l)
+
+    if wscore ≥ 66
+        if lscore == 0
+            return 3
+        elseif lscore ≤ 32
+            return 2
+        else
+            return 1
+        end
+    end
+
+    if is_locked(s) && s.lock != w
+        # opponent locked and did not achieve 66
+        if s.stichlos
+            return 3
+        else
+            return 2
+        end
+    end
+
+    if wscore < 66 && lscore < 66
+        # lasttrick
+        return 1
+    end
+end
 
 struct Move
     card::Card
@@ -417,7 +483,7 @@ function make_move!(s::Schnapsen, move::Move)
         if move.call
             @assert face(move.card) == QUEEN || face(move.card) == KING
             v = 20
-            if isatout(move.card)
+            if isatout(s, move.card)
                 v *= 2
             end
             if s.player_to_move == 1
@@ -428,6 +494,8 @@ function make_move!(s::Schnapsen, move::Move)
         end
         if move.lock
             s.lock = s.player_to_move
+            opp_trickscore = s.player_to_move == 1 ? s.trickscore2 : s.trickscore1
+            s.stichlos = opp_trickscore == 0
         end
 
         s.player_to_move = s.player_to_move == 1 ? 2 : 1
@@ -439,10 +507,11 @@ function make_move!(s::Schnapsen, move::Move)
 
         won = false
         if isatout(s, move.card)
-            if isatout(s.played_card)
+            if isatout(s, s.played_card)
                 won = f1 < f2
+            else
+                won = true
             end
-            won = true
         else
             won = f1 < f2
         end
@@ -455,19 +524,21 @@ function make_move!(s::Schnapsen, move::Move)
         s.trickscore2 += v2
 
         # draw cards
-        c1 = pop!(s.talon)
-        c2 = pop!(s.talon)
-        if v1 > 0
-            s.hand1 = add(s.hand1, c1)
-            s.hand2 = add(s.hand2, c2)
-
-            s.player_to_move = 1
-        else
-            s.hand1 = add(s.hand1, c2)
-            s.hand2 = add(s.hand2, c1)
-
-            s.player_to_move = 2
+        if !is_locked(s)
+            c1 = pop!(s.talon)
+            c2 = pop!(s.talon)
+            if v1 > 0
+                s.hand1 = add(s.hand1, c1)
+                s.hand2 = add(s.hand2, c2)
+                s.lasttrick = 1
+            else
+                s.hand1 = add(s.hand1, c2)
+                s.hand2 = add(s.hand2, c1)
+                s.lasttrick = 2
+            end
         end
+
+        s.player_to_move = v1 > 0 ? 1 : 2
 
         s.played_card = NOCARD
     end
@@ -475,34 +546,58 @@ function make_move!(s::Schnapsen, move::Move)
     s
 end
 
+function stringtomove(str::String)
+    sts = Dict('S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS)
+    fs = Dict("J"=>JACK, "Q"=>QUEEN, "K"=>KING, "10"=>TEN, "A"=>ACE)
 
-s = Schnapsen()
+    sgroups = split(str, " ")
 
+    f = sgroups[1][1:end-1]
+    st = sgroups[1][end]
 
+    card = Card(sts[st], fs[f])
 
+    call = false
+    lock = false
 
+    if length(sgroups) > 1
+        call = occursin("a", sgroups[2])
+        lock = occursin("z", sgroups[2])
+    end
 
+    return Move(card, call, lock)
+end
 
-m = get_moves(s)[1]
-make_move!(s, m)
-m = get_moves(s)[2]
+function playloop(seed=0)
+    s = Schnapsen(seed)
 
+    while !is_gameover(s)
+        println(s)
+        ms = get_moves(s)
+        println("Valid moves: ", ms)
 
-make_move!(s, m)
+        m = nothing
+        while isnothing(m)
+            print("Player $(s.player_to_move) to move: ")
+            try
+                str = readline()
+                move = stringtomove(str)
+                if move in ms
+                    m = move
+                end
+            catch e
+                println(e)
+                if e isa InterruptException
+                    break
+                end
+            end
+        end
 
-
-
-get_moves(s)
-
-
-
-m = get_moves(s)[4]
-
-make_move!(s, m)
-
-
-
-
-
-
-get_moves(s)
+        make_move!(s, m)
+        println()
+        println()
+    end
+    println(s)
+    println()
+    println("Winner: $(winner(s)) with $(winscore(s)) points.")
+end
