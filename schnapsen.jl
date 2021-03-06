@@ -242,6 +242,37 @@ function Schnapsen(seed=0)
     )
 end
 
+function Base.show(io::IO, s::Schnapsen)
+    print(io, "Player 2: ")
+    for card in s.hand2
+        print(io, card, " ")
+    end
+    println(io, ", $(s.trickscore2) (+ $(s.call2))")
+
+    println(io, "Played: $(s.played_card)")
+
+    print(io, "Talon: ")
+    for card in s.talon
+        print(io, card, " ")
+    end
+    println(io)
+    print(io, "atout: $(SUIT_SYMBOLS[s.atout]), ")
+    println(io, "locked: $(s.islocked)")
+
+    print(io, "Player 1: ")
+    for card in s.hand1
+        print(io, card, " ")
+    end
+    print(io, ", $(s.trickscore1) (+ $(s.call1))")
+end
+
+
+struct Move
+    card::Card
+    call::Bool
+    lock::Bool
+end
+
 
 function make_move!(s::Schnapsen, move::Move)
     if s.player_to_move == 1
@@ -272,7 +303,8 @@ function make_move!(s::Schnapsen, move::Move)
             end
         end
         if move.lock
-
+            s.islocked = true
+        end
     else
         # decide trick (stich)
 
@@ -309,11 +341,4 @@ function make_move!(s::Schnapsen, move::Move)
     end
 
     s.player_to_move = s.player_to_move == 1 ? 2 : 1
-end
-
-
-struct Move
-    card::Card
-    call::Bool
-    lock::Bool
 end
