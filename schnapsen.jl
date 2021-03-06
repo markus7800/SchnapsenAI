@@ -1,7 +1,7 @@
 
 
 struct Cards
-    cs::UInt
+    cs::UInt64
 end
 
 function Base.:|(left::Cards, right::Cards)::Cards
@@ -17,7 +17,7 @@ function Base.length(cards::Cards)
 end
 
 struct Card
-    c::UInt
+    c::UInt64
 end # where only one bit set
 
 function Base.in(card::Card, cards::Cards)
@@ -114,6 +114,11 @@ function first(cards::Cards)::Card
     Card(1 << trailing_zeros(cards.cs))
 end
 
+function last(cards::Cards)::Card
+    # trailing_zeros is Int for UInt64
+    Card(1 << (64-leading_zeros(cards.cs)-1))
+end
+
 function removefirst(cards::Cards)::Cards
     Cards(cards.cs & (cards.cs - 1))
 end
@@ -165,7 +170,7 @@ mutable struct Schnapsen
     hand2::Cards
 
     played_card::Card
-    islocked::Bool
+    lock::Int
 
     trickscore1::Int
     trickscore2::Int
@@ -178,7 +183,7 @@ mutable struct Schnapsen
 end
 
 function isatout(s::Schnapsen, card::Card)
-    (s.atout & card).cs == 0
+    (s.atout.cs & card.c) != 0
 end
 
 
@@ -229,7 +234,7 @@ function Schnapsen(seed=0)
         hand2,
 
         NOCARD, # played_card
-        false, # locked
+        0, # lock
 
         # scores
         0,
@@ -257,13 +262,50 @@ function Base.show(io::IO, s::Schnapsen)
     end
     println(io)
     print(io, "atout: $(SUIT_SYMBOLS[s.atout]), ")
-    println(io, "locked: $(s.islocked)")
+    if is_locked(s)
+        println(io, "locked by $(s.lock).")
+    else
+        println(io, "not locked.")
+    end
+
 
     print(io, "Player 1: ")
     for card in s.hand1
         print(io, card, " ")
     end
-    print(io, ", $(s.trickscore1) (+ $(s.call1))")
+    println(io, ", $(s.trickscore1) (+ $(s.call1))")
+
+    print(io, "Next Player: $(s.player_to_move)")
+end
+
+function is_locked(s::Schnapsen)
+    s.lock != 0
+end
+
+function playerscore(s::Schnapsen, player::Int)
+    trickscore = player == 1 ? s.trickscore1 : s.trickscore2
+    call = player == 1 ? s.call1 : s.call2
+
+    score = trickscore
+
+    if score > 0
+        score += call
+    end
+
+    return score
+end
+
+function is_gameover(s::Schnapsen)
+    if s.played_card != NOCARD
+        return false
+    end
+
+    score1 = playerscore(s, 1)
+    score2 = playerscore(s, 2)
+
+    if score1 ≥ 66 || score2 ≥ 66
+        return true
+    end
 end
 
 
@@ -271,6 +313,88 @@ struct Move
     card::Card
     call::Bool
     lock::Bool
+end
+
+function Base.show(io::IO, move::Move)
+    print(io, move.card)
+    if move.call
+        print(io, ", angesagt")
+    end
+    if move.lock
+        print(io, ", zugedreht")
+    end
+end
+
+function get_moves(s::Schnapsen)
+    moves = Vector{Move}()
+
+    hand = s.player_to_move == 1 ? s.hand1 : s.hand2
+
+    if s.played_card == NOCARD
+        for card in hand
+            f = face(card)
+            st = suit(card)
+            # normales auspielen
+            push!(moves, Move(card, false, false))
+
+            if !is_locked(s) && length(s.talon) > 0
+                # auspielen mit zudrehen
+                push!(moves, Move(card, false, true))
+            end
+
+            if (f == QUEEN && Card(st, KING) in hand) ||
+                (f == KING && Card(st, QUEEN) in hand)
+
+                # auspielen mit ansage
+                push!(moves, Move(card, true, false))
+
+                if !is_locked(s) && length(s.talon) > 0
+                    # auspielen mit ansage und zudrehen
+                    push!(moves, Move(card, true, true))
+                end
+            end
+        end
+    else
+        pf = face(s.played_card)
+        pst = suit(s.played_card)
+        farbzwang = false
+        stichzwang = false
+        if (pst & hand) != NOCARDS
+            # hat farbe, covers ps==atout
+            farbzwang = true
+            if face(last(pst & hand)) > pf
+                stichzwang = true
+            end
+        end
+        if !farbzwang
+            if (s.atout & hand) != NOCARDS
+                # hat atout aber nicht farbe
+                stichzwang = true
+            end
+        end
+
+
+        for card in hand
+            f = face(card)
+            st = suit(card)
+
+            if is_locked(s) || length(s.talon) == 0
+                farbzwang && st != pst && continue # falsche farbe
+                if stichzwang
+                    if !(
+                        (st == pst && f > pf) || # gleiche farbe, größer wert
+                        (st == s.atout && pst != s.atout) # verschiedene farbe, atout
+                        )
+                        continue
+                    end
+                end
+            end
+
+            push!(moves, Move(card, false, false))
+        end
+    end
+
+    return moves
 end
 
 
@@ -303,8 +427,10 @@ function make_move!(s::Schnapsen, move::Move)
             end
         end
         if move.lock
-            s.islocked = true
+            s.lock = s.player_to_move
         end
+
+        s.player_to_move = s.player_to_move == 1 ? 2 : 1
     else
         # decide trick (stich)
 
@@ -334,11 +460,49 @@ function make_move!(s::Schnapsen, move::Move)
         if v1 > 0
             s.hand1 = add(s.hand1, c1)
             s.hand2 = add(s.hand2, c2)
+
+            s.player_to_move = 1
         else
             s.hand1 = add(s.hand1, c2)
             s.hand2 = add(s.hand2, c1)
+
+            s.player_to_move = 2
         end
+
+        s.played_card = NOCARD
     end
 
-    s.player_to_move = s.player_to_move == 1 ? 2 : 1
+    s
 end
+
+
+s = Schnapsen()
+
+
+
+
+
+
+m = get_moves(s)[1]
+make_move!(s, m)
+m = get_moves(s)[2]
+
+
+make_move!(s, m)
+
+
+
+get_moves(s)
+
+
+
+m = get_moves(s)[4]
+
+make_move!(s, m)
+
+
+
+
+
+
+get_moves(s)
