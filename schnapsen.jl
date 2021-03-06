@@ -181,7 +181,42 @@ mutable struct Schnapsen
     call2::Int
 
     player_to_move::Int
+end
 
+import Base.==
+function ==(l::Schnapsen, r::Schnapsen)
+    if length(l.talon) != length(r.talon)
+        return false
+    end
+    for (lc, rc) in zip(l.talon, r.talon)
+        if lc != rc
+            return false
+        end
+    end
+
+    if l.atout != r.atout
+        return false
+    end
+    if l.hand1 != r.hand1 || l.hand2 != r.hand2
+        return false
+    end
+    if l.played_card != r.played_card || l.lock != r.lock || l.stichlos != r.stichlos
+        return false
+    end
+    if l.trickscore1 != r.trickscore1 || l.trickscore2 != r.trickscore2
+        return false
+    end
+    if l.lasttrick != r.lasttrick
+        return false
+    end
+    if l.call1 != r.call1 || l.call2 != r.call2
+        return false
+    end
+    if l.player_to_move != r.player_to_move
+        return false
+    end
+
+    return true
 end
 
 function isatout(s::Schnapsen, card::Card)
@@ -403,7 +438,7 @@ function get_moves(s::Schnapsen)
             # normales auspielen
             push!(moves, Move(card, false, false))
 
-            if !is_locked(s) && length(s.talon) > 0
+            if !is_locked(s) && length(s.talon) > 2
                 # auspielen mit zudrehen
                 push!(moves, Move(card, false, true))
             end
@@ -414,7 +449,7 @@ function get_moves(s::Schnapsen)
                 # auspielen mit ansage
                 push!(moves, Move(card, true, false))
 
-                if !is_locked(s) && length(s.talon) > 0
+                if !is_locked(s) && length(s.talon) > 2
                     # auspielen mit ansage und zudrehen
                     push!(moves, Move(card, true, true))
                 end
@@ -463,8 +498,33 @@ function get_moves(s::Schnapsen)
     return moves
 end
 
+mutable struct Undo
+    hand1::Cards
+    hand2::Cards
 
-function make_move!(s::Schnapsen, move::Move)
+    trickscore1::Int
+    trickscore2::Int
+    lasttrick::Int
+
+    call1::Int
+    call2::Int
+
+    player_to_move::Int
+    played_card::Card
+
+    c1::Card
+    c2::Card
+end
+
+function Undo(s::Schnapsen, c1=Card(0), c2=Card(0))
+    Undo(s.hand1, s.hand2, s.trickscore1, s.trickscore2, s.lasttrick,
+        s.call1, s.call2, s.player_to_move, s.played_card, c1, c2)
+end
+
+function make_move!(s::Schnapsen, move::Move)::Undo
+
+    undo = Undo(s)
+
     if s.player_to_move == 1
         @assert move.card in s.hand1
     else
@@ -536,6 +596,9 @@ function make_move!(s::Schnapsen, move::Move)
                 s.hand2 = add(s.hand2, c1)
                 s.lasttrick = 2
             end
+
+            undo.c1 = c1
+            undo.c2 = c2
         end
 
         s.player_to_move = v1 > 0 ? 1 : 2
@@ -543,8 +606,41 @@ function make_move!(s::Schnapsen, move::Move)
         s.played_card = NOCARD
     end
 
-    s
+    return undo
 end
+
+
+
+function undo_move!(s::Schnapsen, move::Move, undo::Undo)
+    v1 = s.trickscore1 - undo.trickscore1
+    v2 = s.trickscore2 - undo.trickscore2
+
+    s.trickscore1 = undo.trickscore1
+    s.trickscore2 = undo.trickscore2
+    s.lasttrick = undo.lasttrick
+
+    s.call1 = undo.call1
+    s.call2 = undo.call2
+
+    s.player_to_move = undo.player_to_move
+
+    if undo.played_card == NOCARD
+        if move.lock
+            s.lock = 0
+            s.stichlos = false
+        end
+    end
+    if undo.c1 != NOCARD && undo.c2 != NOCARD
+        push!(s.talon, undo.c2)
+        push!(s.talon, undo.c1)
+    end
+
+    s.hand1 = undo.hand1
+    s.hand2 = undo.hand2
+
+    s.played_card = undo.played_card
+end
+
 
 function stringtomove(str::String)
     sts = Dict('S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS)
@@ -601,3 +697,62 @@ function playloop(seed=0)
     println()
     println("Winner: $(winner(s)) with $(winscore(s)) points.")
 end
+
+
+function perft_debug(s::Schnapsen, depth::Int)
+    if depth == 1
+        return length(get_moves(s))
+    end
+    n = 0
+    _s = deepcopy(s)
+    for m in get_moves(s)
+        u = make_move!(s, m)
+        undo_move!(s, m, u)
+        if s != _s
+            println("board:")
+            println(_s)
+            println("\n\nmove:")
+            println(m)
+            println("\n\nboard after move + undo:")
+            println(s)
+            println("\n\nundo:")
+            println(u)
+            error("NO!")
+        end
+        u = make_move!(s, m)
+        n += perft_debug(s, depth-1)
+        undo_move!(s, m, u)
+    end
+
+    return n
+end
+
+perft_debug(Schnapsen(), 10)
+
+
+function perft(s::Schnapsen, depth::Int)
+    if is_gameover(s)
+        return 0
+    end
+    if depth == 1
+        return length(get_moves(s))
+    end
+    n = 0
+    for m in get_moves(s)
+        u = make_move!(s, m)
+        n += perft(s, depth-1)
+        undo_move!(s, m, u)
+    end
+
+    return n
+end
+
+
+using BenchmarkTools
+n = perft(Schnapsen(), 10)
+@btime perft(Schnapsen(), 10)
+
+n,t, = @timed perft(Schnapsen(), 11)
+n / t
+
+# 15 mio per second
