@@ -19,6 +19,16 @@ struct Card
     c::UInt64
 end # where only one bit set
 
+function Base.:|(left::Card, right::Cards)::Cards
+    return Cards(left.c | right.cs)
+end
+
+
+function Base.:|(left::Cards, right::Card)::Cards
+    return Cards(left.cs | right.c)
+end
+
+
 function Base.in(card::Card, cards::Cards)
     card.c & cards.cs > 0
 end

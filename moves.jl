@@ -152,7 +152,11 @@ function make_move!(s::Schnapsen, move::Move)::Undo
         # decide trick (stich)
 
         f1 = face(s.played_card)
+        s1 = suit(s.played_card)
+
         f2 = face(move.card)
+        s2 = suit(move.card)
+
 
         won = false
         if isatout(s, move.card)
@@ -162,7 +166,11 @@ function make_move!(s::Schnapsen, move::Move)::Undo
                 won = true
             end
         else
-            won = f1 < f2
+            if isatout(s, s.played_card)
+                won = false
+            else
+                won = s1 == s2 && f2 < f1
+            end
         end
 
         v = value(f1) + value(f2)
@@ -230,6 +238,81 @@ function undo_move!(s::Schnapsen, move::Move, undo::Undo)
     s.played_card = undo.played_card
 end
 
+function move_value(s::Schnapsen, move::Move)
+
+    cardatout = isatout(s, move.card)
+    f1 = face(move.card)
+    s1 = suit(move.card)
+    v1 = value(f1)
+
+    if s.played_card == NOCARD
+        # welche karte auspielen?
+        opp_hand = s.player_to_move == 1 ? s.hand2 : s.hand1
+
+        val = 100 # punkte die ich bekomme wenn gegner optimal sticht
+        for card in opp_hand
+            f2 = face(card)
+            s2 = suit(card)
+            v2 = value(f2)
+
+            v = v1 + v2
+
+            won = false
+            if cardatout
+                if isatout(s, card)
+                    won = f2 < f1
+                else
+                    won = true
+                end
+            else
+                if isatout(s, card)
+                    won = false
+                else
+                    won = s1 != s2 || f2 < f1
+                end
+            end
+
+            if won
+                val = min(val, v)
+            else
+                val = min(val, -v)
+            end
+        end
+
+        return val
+    else
+        # mit welcher karte stechen?
+        card = s.played_card
+
+        f2 = face(card)
+        s2 = suit(card)
+        v2 = value(f2)
+
+        v = v1 + v2
+
+        won = false
+        if cardatout
+            if isatout(s, card)
+                won = f2 < f1
+            else
+                won = true
+            end
+        else
+            if isatout(s, card)
+                won = false
+            else
+                won = s1 != s2 || f2 < f1
+            end
+        end
+
+        if won
+            return v
+        else
+            return -v
+        end
+    end
+end
+
 
 function stringtomove(str::String)
     sts = Dict('S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS)
@@ -286,3 +369,24 @@ function playloop(seed=0)
     println()
     println("Winner: $(winner(s)) with $(winscore(s)) points.")
 end
+
+
+s = Schnapsen()
+
+
+
+
+
+
+
+
+for m in get_moves(s)
+    println(m, ": ", move_value(s, m))
+end
+
+ms = get_moves(s)
+sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), rev=true)
+
+make_move!(s, ms[1])
+
+s
