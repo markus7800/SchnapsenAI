@@ -169,7 +169,7 @@ function make_move!(s::Schnapsen, move::Move)::Undo
             if isatout(s, s.played_card)
                 won = false
             else
-                won = s1 == s2 && f2 < f1
+                won = s1 == s2 && f1 < f2
             end
         end
 
@@ -181,17 +181,16 @@ function make_move!(s::Schnapsen, move::Move)::Undo
         s.trickscore2 += v2
 
         # draw cards
-        if !is_locked(s)
+        if !is_locked(s) && length(s.talon) ≥ 2
             c1 = pop!(s.talon)
             c2 = pop!(s.talon)
             if v1 > 0
                 s.hand1 = add(s.hand1, c1)
                 s.hand2 = add(s.hand2, c2)
-                s.lasttrick = 1
+
             else
                 s.hand1 = add(s.hand1, c2)
                 s.hand2 = add(s.hand2, c1)
-                s.lasttrick = 2
             end
 
             undo.c1 = c1
@@ -199,6 +198,7 @@ function make_move!(s::Schnapsen, move::Move)::Undo
         end
 
         s.player_to_move = v1 > 0 ? 1 : 2
+        s.lasttrick = s.player_to_move
 
         s.played_card = NOCARD
     end
@@ -279,6 +279,12 @@ function move_value(s::Schnapsen, move::Move)
             end
         end
 
+        if move.lock
+            val += 25
+        end
+        if move.call
+            val += 50
+        end
         return val
     else
         # mit welcher karte stechen?
@@ -336,30 +342,38 @@ function stringtomove(str::String)
     return Move(card, call, lock)
 end
 
-function playloop(seed=0)
-    s = Schnapsen(seed)
+function user_input(s::Schnapsen)::Move
+    m = nothing
+    ms = get_moves(s)
+    println("Valid moves: ", ms)
+    while isnothing(m)
+        print("Player $(s.player_to_move) to move: ")
+        try
+            str = readline()
+            move = stringtomove(str)
+            if move in ms
+                m = move
+            end
+        catch e
+            println(e)
+            if e isa InterruptException
+                break
+            end
+        end
+    end
+    return m
+end
+
+function playloop(s::Schnapsen; player1=userinput, player2=userinput)
+    s = deepcopy(s)
 
     while !is_gameover(s)
         println(s)
         ms = get_moves(s)
-        println("Valid moves: ", ms)
 
-        m = nothing
-        while isnothing(m)
-            print("Player $(s.player_to_move) to move: ")
-            try
-                str = readline()
-                move = stringtomove(str)
-                if move in ms
-                    m = move
-                end
-            catch e
-                println(e)
-                if e isa InterruptException
-                    break
-                end
-            end
-        end
+        m = s.player_to_move == 1 ? player1(s) : player2(s)
+
+        @assert m in ms
 
         make_move!(s, m)
         println()
@@ -369,24 +383,3 @@ function playloop(seed=0)
     println()
     println("Winner: $(winner(s)) with $(winscore(s)) points.")
 end
-
-
-s = Schnapsen()
-
-
-
-
-
-
-
-
-for m in get_moves(s)
-    println(m, ": ", move_value(s, m))
-end
-
-ms = get_moves(s)
-sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), rev=true)
-
-make_move!(s, ms[1])
-
-s

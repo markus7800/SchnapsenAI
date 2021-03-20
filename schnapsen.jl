@@ -118,20 +118,32 @@ function Schnapsen(seed=0)
     )
 end
 
+
 function Base.show(io::IO, s::Schnapsen)
+    show_schnapsen(io, s)
+end
+
+function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
     print(io, "Player 2: ")
-    for card in s.hand2
-        print(io, card, " ")
+    if perspective == 2
+        for card in s.hand2
+            print(io, card, " ")
+        end
+        println(io, ", $(s.trickscore2) (+ $(s.call2))")
+    else
+        println(io, "* * * * *")
     end
-    println(io, ", $(s.trickscore2) (+ $(s.call2))")
 
     println(io, "Played: $(s.played_card)")
 
-    print(io, "Talon: ")
-    for card in s.talon
-        print(io, card, " ")
+    if perspective == 0
+        print(io, "Talon: ")
+        for card in s.talon
+            print(io, card, " ")
+        end
+        println(io)
     end
-    println(io)
+
     print(io, "atout: $(SUIT_SYMBOLS[s.atout]), ")
     if is_locked(s)
         println(io, "locked by $(s.lock).")
@@ -141,10 +153,16 @@ function Base.show(io::IO, s::Schnapsen)
 
 
     print(io, "Player 1: ")
-    for card in s.hand1
-        print(io, card, " ")
+    if perspective == 1
+        for card in s.hand1
+            print(io, card, " ")
+        end
+        println(io, ", $(s.trickscore1) (+ $(s.call1))")
+    else
+        println(io, "* * * * *")
     end
-    println(io, ", $(s.trickscore1) (+ $(s.call1))")
+
+    println(io, "Last trick: $(s.lasttrick)")
 
     print(io, "Next Player: $(s.player_to_move)")
 end

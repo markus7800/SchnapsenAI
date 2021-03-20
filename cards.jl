@@ -78,6 +78,7 @@ end
 
 const NOCARD = Card(0)
 const NOCARDS = Cards(0)
+const ALLCARDS = CLUBS | SPADES | DIAMONDS | HEARTS
 
 function Card(suit::Cards, face::Face)::Card
     return Card(face.f << trailing_zeros(suit.cs))

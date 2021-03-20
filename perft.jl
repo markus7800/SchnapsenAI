@@ -81,3 +81,5 @@ s.lock = 1
 @time perft(Schnapsen(), 12)
 
 @time perft2(Schnapsen(), 12)
+
+@profiler perft(Schnapsen(), 11)
