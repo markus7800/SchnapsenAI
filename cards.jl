@@ -33,6 +33,10 @@ function Base.in(card::Card, cards::Cards)
     card.c & cards.cs > 0
 end
 
+function remove(cards::Cards, othercards::Cards)
+    Cards(cards.cs ⊻ othercards.cs)
+end
+
 function remove(cards::Cards, card::Card)
     Cards(cards.cs ⊻ card.c)
 end

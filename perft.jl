@@ -69,7 +69,7 @@ n / t
 
 # 38 -> 51 mio per second
 
-@btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 99.562 ms (1329217 allocations: 108.28 MiB) -> 48.057 ms (17 allocations: 1.96 KiB)
+@btime alphabeta(Schnapsen(), -10_000, 10_000, 4, mls, uls) # 99.562 ms (1329217 allocations: 108.28 MiB) -> 48.057 ms (17 allocations: 1.96 KiB)
 
 s = Schnapsen()
 s.lock = 1

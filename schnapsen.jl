@@ -125,7 +125,7 @@ end
 
 
 function Base.show(io::IO, s::Schnapsen)
-    show_schnapsen(io, s, s.player_to_move)
+    show_schnapsen(io, s, 0)
 end
 
 function show_schnapsen(io::IO, s::Schnapsen, perspective=0)

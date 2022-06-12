@@ -28,3 +28,10 @@ using Combinatorics
     end
     n
 end
+
+cards = all_cards()[7:end]
+length(combinations(cards, 5))
+
+(number_of_possible_games(5) * 0.050) / 60 / 60 / 24
+
+1 / 0.050
