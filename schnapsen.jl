@@ -12,7 +12,7 @@ mutable struct Schnapsen
 
     played_card::Card
     lock::Int
-    stichlos::Bool
+    opp_trickscore_at_lock::Int
 
     trickscore1::Int
     trickscore2::Int
@@ -44,7 +44,7 @@ function ==(l::Schnapsen, r::Schnapsen)
     if l.hand1 != r.hand1 || l.hand2 != r.hand2
         return false
     end
-    if l.played_card != r.played_card || l.lock != r.lock || l.stichlos != r.stichlos
+    if l.played_card != r.played_card || l.lock != r.lock || l.opp_trickscore_at_lock != r.opp_trickscore_at_lock
         return false
     end
     if l.trickscore1 != r.trickscore1 || l.trickscore2 != r.trickscore2
@@ -108,7 +108,7 @@ function Schnapsen(seed=0)
 
         NOCARD, # played_card
         0, # lock
-        false, # stichlos
+        0, # opp_trickscore_at_lock
 
         # trickscores
         0,
@@ -188,6 +188,9 @@ function playerscore(s::Schnapsen, player::Int)
     score = trickscore
 
     if score > 0
+        # Hat der Spieler, der eine Ansage getätigt hat,
+        # das gesamte Spiel über keinen Stich erzielt,
+        # zählen die durch die Ansage erzielten Augen nicht
         score += call
     end
 
@@ -196,6 +199,7 @@ end
 
 function is_gameover(s::Schnapsen)
     if s.played_card != NOCARD
+        # Karte wurde ausgespielt, Gegner muss antworten
         return false
     end
 
@@ -203,10 +207,14 @@ function is_gameover(s::Schnapsen)
     score2 = playerscore(s, 2)
 
     if score1 ≥ 66 || score2 ≥ 66
+        # Hat ein Spieler nach Gewinn eines Stichs oder einer Ansage (s. u.) 66
+        # oder mehr Augen erreicht, so darf er sich ausmelden.
+        # Das Spiel ist beendet, und jeder Spieler zählt die gesammelten Augen.
         return true
     end
 
     if length(s.hand1) + length(s.hand2) == 0
+        # Alle Karten ausgespielt.
         return true
     end
 
@@ -224,6 +232,8 @@ function winner(s::Schnapsen)
         return 2
     end
 
+    # Kann der Spieler, der den Talon gesperrt hat, keine 66 Augen erzielen,
+    # bzw. kann sich sein Gegner zuvor ausmelden, so gewinnt der Gegner
     if score1 < 66 && s.lock == 1
         return 2
     end
@@ -232,6 +242,12 @@ function winner(s::Schnapsen)
     end
 
     if score1 < 66 && score2 < 66
+        # Hat vor dem Ausspielen der letzten Karte kein Spieler das Spiel
+        # für gewonnen erklärt, muss die letzte Karte gespielt werden und
+        # es gewinnt derjenige das Spiel, der den letzten Stich erzielt.
+        # Wer den letzten Stich erzielen kann, spielt im Falle einer Talonsperre keine Rolle.
+
+        # Wenn kein Spieler im Spielverlauf ausruft, gilt der Gewinner des letzten Stichs als Sieger.
         return s.lasttrick
     end
 
@@ -244,22 +260,47 @@ function winscore(s::Schnapsen)
     wscore = playerscore(s, w)
     lscore = playerscore(s, l)
 
-    if wscore ≥ 66
-        if lscore == 0
+    # Kann der Spieler, der den Talon gesperrt hat, keine 66 Augen erzielen,
+    # bzw. kann sich sein Gegner zuvor ausmelden, so gewinnt der Gegner
+    if is_locked(s) && s.lock != w
+        # opponent locked and did not achieve 66
+        if s.opp_trickscore_at_lock == 0
+            # drei Punkte, falls er zum Zeitpunkt des Zudrehens noch stichlos war
             return 3
-        elseif lscore ≤ 32
+        else
+            # ansonsten zwei Punkte
+            return 2
+        end
+    end
+    if is_locked(s) && s.lock == w
+        # Wenn ein Spieler zudreht, werden die Punkte des Gegners eingefroren.
+        # Das heißt, der zudrehende Spieler erzielt 2 Punkte, wenn der Spieler
+        # zum Zeitpunkt des Zudrehens weniger als 33 Punkte hatte.
+        if s.opp_trickscore_at_lock == 0
+            # Hat der Gegner keinen Stich erzielt, gewinnt der Spieler drei Punkte.
+            return 3
+        elseif s.opp_trickscore_at_lock ≤ 32
+            # Hat der Gegner 32 oder weniger Augen erhalten, gewinnt der Spieler zwei Punkte
             return 2
         else
+            # Hat der Gegner 33 oder mehr Augen erhalten, gewinnt der Spieler einen Punkt.
             return 1
         end
     end
 
-    if is_locked(s) && s.lock != w
-        # opponent locked and did not achieve 66
-        if s.stichlos
+    # Hat ein Spieler nach Gewinn eines Stichs oder einer Ansage
+    # 66 oder mehr Augen erreicht, so darf er sich ausmelden.
+    # Das Spiel ist beendet, und jeder Spieler zählt die gesammelten Augen.
+    if wscore ≥ 66
+        if lscore == 0
+            # Hat der Gegner keinen Stich erzielt, gewinnt der Spieler drei Punkte.
             return 3
-        else
+        elseif lscore ≤ 32
+            # Hat der Gegner 32 oder weniger Augen erhalten, gewinnt der Spieler zwei Punkte
             return 2
+        else
+            # Hat der Gegner 33 oder mehr Augen erhalten, gewinnt der Spieler einen Punkt.
+            return 1
         end
     end
 

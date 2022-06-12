@@ -83,38 +83,46 @@ function get_moves!(moves::MoveList, s::Schnapsen)
     hand = s.player_to_move == 1 ? s.hand1 : s.hand2
 
     if s.played_card == NOCARD
+        # Spieler muss Karte ausspielen
         for card in hand
             f = face(card)
             st = suit(card)
             # normales auspielen
             push!(moves, Move(card, false, false))
 
-            if !is_locked(s) && s.n_talon > 2 #TODO >=?
+            if !is_locked(s) && s.n_talon ≥ 2
                 # auspielen mit zudrehen
+                # Zudrehen ist auch ohne einen Stich erlaubt.
+                # Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt.
                 push!(moves, Move(card, false, true))
             end
 
             if (f == QUEEN && Card(st, KING) in hand) ||
                 (f == KING && Card(st, QUEEN) in hand)
+                # 20 bzw. 40 darf auch ohne einen Stich angesagt werden.
+                # Die Punkte werden aber erst nach Erzielen eines Stiches gutgeschrieben.
+                # Beim Ansagen von 20 bzw. 40 darf die Dame oder der König gespielt werden.
 
                 # auspielen mit ansage
                 push!(moves, Move(card, true, false))
 
-                if !is_locked(s) && s.n_talon > 2 #TODO >=?
+                if !is_locked(s) && s.n_talon ≥ 2
                     # auspielen mit ansage und zudrehen
                     push!(moves, Move(card, true, true))
                 end
             end
         end
     else
+        # Spieler muss auf ausgespielte Karte reagieren
         pf = face(s.played_card)
         pst = suit(s.played_card)
         farbzwang = false
         stichzwang = false
         if (pst & hand) != NOCARDS
             # hat farbe, covers ps==atout
-            farbzwang = true
+            farbzwang = true # kann ausgespielte Karte bedienen
             if face(last(pst & hand)) > pf
+                # hat farbe mit höheren wert, kann stechen
                 stichzwang = true
             end
         end
@@ -125,13 +133,20 @@ function get_moves!(moves::MoveList, s::Schnapsen)
             end
         end
 
-
+        # Ist der Talon aufgebraucht oder wurde er zugedreht, gilt ab diesem Zeitpunkt Farb- und Stichzwang;
+        # das heißt ein Spieler muss, wenn er an der Reihe ist:
+        # - mit einer höheren Karte der angespielten Farbe stechen. Kann er das nicht, so muss er
+        # - eine niedrigere Karte der angespielten Farbe zugeben. Ist das nicht möglich, so muss er
+        # - mit einer Trumpfkarte stechen, und falls auch das nicht geschehen kann,
+        # - eine beliebige andere Karte abwerfen.
+        # Farbzwang geht immer vor Stichzwang:
+        # Es ist nicht erlaubt mit einer Trumpfkarte zu stechen, wenn man die angespielte Farbe bedienen kann.
         for card in hand
             f = face(card)
             st = suit(card)
 
             if is_locked(s) || s.n_talon == 0
-                farbzwang && st != pst && continue # falsche farbe
+                farbzwang && st != pst && continue # falsche farbe, Farbzwang geht immer vor Stichzwang
                 if stichzwang
                     if !(
                         (st == pst && f > pf) || # gleiche farbe, größer wert
@@ -213,10 +228,12 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
         s.played_card = move.card
 
         if move.call
-            @assert face(move.card) == QUEEN || face(move.card) == KING
-            v = 20
+            # Besitzt ein Spieler König und Ober bzw. Dame von einer Farbe, so kann er dies, wenn er am Zug ist, ansagen (melden) und erhält dafür wie folgt Augen gutgeschrieben.
+            # @assert face(move.card) == QUEEN || face(move.card) == KING # Wer eine Ansage macht, muss eine der beiden Karten zum nächsten Stich ausspielen.
+            v = 20  # Eine Ansage in einer anderen Farbe zählt 20 Augen, man nennt dies einen Zwanziger.
+
             if isatout(s, move.card)
-                v *= 2
+                v *= 2 # eine Ansage in Trumpf zählt 40 Augen, die Meldung in Atout wird daher Vierziger genannt.
             end
             if s.player_to_move == 1
                 s.call1 += v
@@ -227,7 +244,7 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
         if move.lock
             s.lock = s.player_to_move
             opp_trickscore = s.player_to_move == 1 ? s.trickscore2 : s.trickscore1
-            s.stichlos = opp_trickscore == 0
+            s.opp_trickscore_at_lock = opp_trickscore # wenn er (der Gegner) zum Zeitpunkt des Zudrehens einen Stich hatte
         end
 
         s.player_to_move = s.player_to_move == 1 ? 2 : 1
@@ -265,21 +282,16 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
 
         # draw cards
         if !is_locked(s) && s.n_talon ≥ 2
-            c1 = s.talon[s.n_talon]
-            c2 = s.talon[s.n_talon-1]
+            c1 = s.talon[s.n_talon] # card for winner
+            c2 = s.talon[s.n_talon-1] # card for loser
             s.n_talon -= 2
-            if v1 > 0
+            if v1 > 0 # player 1 won
                 s.hand1 = add(s.hand1, c1)
                 s.hand2 = add(s.hand2, c2)
-
-            else
+            else # player 2 won
                 s.hand1 = add(s.hand1, c2)
                 s.hand2 = add(s.hand2, c1)
             end
-
-
-            # undo.c1 = c1
-            # undo.c2 = c2
         end
 
         s.player_to_move = v1 > 0 ? 1 : 2
@@ -308,7 +320,7 @@ function undo_move!(s::Schnapsen, move::Move, undo::Undo)
     if undo.played_card == NOCARD
         if move.lock
             s.lock = 0
-            s.stichlos = false
+            s.opp_trickscore_at_lock = 0
         end
     end
 
