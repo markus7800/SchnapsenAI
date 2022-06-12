@@ -64,6 +64,16 @@ function Base.push!(list::MoveList, m::Move)
     list.moves[list.count] = m
 end
 
+
+function Base.push!(list::MoveList, m::Move)
+    list.count += 1
+    list.moves[list.count] = m
+end
+
+function Base.setindex!(list::MoveList, v::Move, i::Int)
+    list.moves[i] = v
+end
+
 function recycle!(list::MoveList)
     list.count = 0
 end
@@ -390,6 +400,16 @@ function move_value(s::Schnapsen, move::Move)
         end
     end
 end
+
+# function move_lt(a::Move, b::Move, s::Schnapsen)::Bool
+#     if a.lock < b.lock
+#         return true
+#     end
+#     if a.lock == b.lock && a.call < b.call
+#         return true
+#     end
+#     return move_value(s, a) < move_value(s, b)
+# end
 
 # 10S az
 function stringtomove(str::String)

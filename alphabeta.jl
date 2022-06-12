@@ -131,7 +131,7 @@ end
 # binomial(20, 5) * binomial(15, 5) * 5 / 1024^2
 
 
-function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
+function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int, mls::Vector{MoveList}, uls::Vector{Undo})
     if is_gameover(s)
         mult = winner(s) == 1 ? 1 : -1
         return mult * winscore(s) * 1000
@@ -140,14 +140,18 @@ function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
         return playerscore(s, 1) - playerscore(s, 2)
     end
 
-    ms = get_moves(s)
-    sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), rev=true)
+    ms = mls[depth]
+    recycle!(ms)
+    get_moves!(ms, s)
+    u = uls[depth]
+
+    sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), alg=Base.Sort.QuickSort, rev=true)
 
     if s.player_to_move == 1
         val = -10_000
         for m in ms
-            u = make_move!(s, m)
-            val = max(val, alphabeta(s, α, β, depth-1))
+            make_move!(s, m, u)
+            val = max(val, alphabeta(s, α, β, depth-1, mls, uls))
             undo_move!(s, m, u)
             α = max(α, val)
             α ≥ β && break
@@ -156,8 +160,8 @@ function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
     else
         val = 10_000
         for m in ms
-            u = make_move!(s, m)
-            val = min(val, alphabeta(s, α, β, depth-1))
+            make_move!(s, m, u)
+            val = min(val, alphabeta(s, α, β, depth-1, mls, uls))
             undo_move!(s, m, u)
             β = min(β, val)
             β ≤ α && break

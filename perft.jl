@@ -42,12 +42,12 @@ function perft(s::Schnapsen, depth::Int, mls::Vector{MoveList}, uls::Vector{Undo
     movelist = mls[depth]
     recycle!(movelist)
     get_moves!(movelist, s)
+    u = uls[depth]
 
     if depth == 1
         return length(movelist)
     end
     n = 0
-    u = uls[depth]
     for m in movelist
         make_move!(s, m, u)
         n += perft(s, depth-1, mls, uls)
@@ -69,7 +69,7 @@ n / t
 
 # 38 -> 51 mio per second
 
-@btime alphabeta(Schnapsen(), -10_000, 10_000, 20) # 99.562 ms (1329217 allocations: 108.28 MiB)
+@btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 99.562 ms (1329217 allocations: 108.28 MiB) -> 48.057 ms (17 allocations: 1.96 KiB)
 
 s = Schnapsen()
 s.lock = 1
@@ -79,3 +79,5 @@ s.lock = 1
 @time perft2(Schnapsen(), 12)
 
 @profiler perft(Schnapsen(), 11, mls)
+
+@profiler alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls)
