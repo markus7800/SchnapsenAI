@@ -105,30 +105,30 @@ function gen_showdown_table()
     end
 end
 
-gen_showdown_table()
-
-binomial(20, 5) * binomial(15, 5) * 0.0001 / 60
-
-
-hands1 = choose(all_cards(), 5)
-
-reduce(|, hands1[100], init=NOCARDS)
-
-
-s = Showdown_Schnapsen()
-
-@btime showdown_alphabeta(s, -10_000, 10_000, 10)
-
-s = Showdown_Schnapsen()
-
-showdown_alphabeta(s, -10_000, 10_000, 2)
-showdown_alphabeta(s, -10_000, 10_000, 4)
-showdown_alphabeta(s, -10_000, 10_000, 6)
-showdown_alphabeta(s, -10_000, 10_000, 8)
-showdown_alphabeta(s, -10_000, 10_000, 10)
-
-
-binomial(20, 5) * binomial(15, 5) * 5 / 1024^2
+# gen_showdown_table()
+#
+# binomial(20, 5) * binomial(15, 5) * 0.0001 / 60
+#
+#
+# hands1 = choose(all_cards(), 5)
+#
+# reduce(|, hands1[100], init=NOCARDS)
+#
+#
+# s = Showdown_Schnapsen()
+#
+# @btime showdown_alphabeta(s, -10_000, 10_000, 10)
+#
+# s = Showdown_Schnapsen()
+#
+# showdown_alphabeta(s, -10_000, 10_000, 2)
+# showdown_alphabeta(s, -10_000, 10_000, 4)
+# showdown_alphabeta(s, -10_000, 10_000, 6)
+# showdown_alphabeta(s, -10_000, 10_000, 8)
+# showdown_alphabeta(s, -10_000, 10_000, 10)
+#
+#
+# binomial(20, 5) * binomial(15, 5) * 5 / 1024^2
 
 
 function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
@@ -168,32 +168,32 @@ end
 
 
 
-s = Schnapsen()
-using BenchmarkTools
-@btime alphabeta(s, -10_000, 10_000, 20)
+# s = Schnapsen()
+# using BenchmarkTools
+# @btime alphabeta(s, -10_000, 10_000, 20)
+#
+# vals = begin
+#     vals = Int[]
+#     @progress for seed in 1:10_000
+#         s = Schnapsen(seed)
+#         v = alphabeta(s, -10_000, 10_000, 4)
+#         push!(vals, v)
+#     end
+#     vals
+# end
 
-vals = begin
-    vals = Int[]
-    @progress for seed in 1:10_000
-        s = Schnapsen(seed)
-        v = alphabeta(s, -10_000, 10_000, 4)
-        push!(vals, v)
-    end
-    vals
-end
-
-using Plots
-
-histogram(vals)
-no_wins = vals[-100 .< vals .& vals .< 100]
-histogram(no_wins)
-
-mean(vals)
-mean(no_wins)
-
-for n in 0:9
-    println(binomial(15-n, 5) * factorial(10-n-1))
-end
+# using Plots
+#
+# histogram(vals)
+# no_wins = vals[-100 .< vals .& vals .< 100]
+# histogram(no_wins)
+#
+# mean(vals)
+# mean(no_wins)
+#
+# for n in 0:9
+#     println(binomial(15-n, 5) * factorial(10-n-1))
+# end
 
 function search(s::Schnapsen, depth::Int)
     rootmoves = get_moves(s)
@@ -218,23 +218,23 @@ function best_move(s::Schnapsen)
     return bestmove
 end
 
-s = Schnapsen()
-
-res = search(s, 20)
-
-best_move(s)
-
-playloop(s, player1=best_move, player2=best_move)
-
-
-cards_known = 6
-n_opp_hand = binomial(20-cards_known, 5)
-n_talon = factorial(20-cards_known-5)
-
-total = n_opp_hand * n_talon
-
-depth = 10
-n_talon / factorial(4)
-eff = total / factorial(20-cards_known-5 - (depth-5))
-
-@btime alphabeta(Schnapsen(), -10_000, 10_000, 20)
+# s = Schnapsen()
+#
+# res = search(s, 20)
+#
+# best_move(s)
+#
+# playloop(s, player1=best_move, player2=best_move)
+#
+#
+# cards_known = 6
+# n_opp_hand = binomial(20-cards_known, 5)
+# n_talon = factorial(20-cards_known-5)
+#
+# total = n_opp_hand * n_talon
+#
+# depth = 10
+# n_talon / factorial(4)
+# eff = total / factorial(20-cards_known-5 - (depth-5))
+#
+# @btime alphabeta(Schnapsen(), -10_000, 10_000, 20)

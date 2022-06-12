@@ -1,3 +1,4 @@
+
 include("alphabeta.jl")
 
 mutable struct Game
@@ -56,7 +57,7 @@ end
 
 
 function best_move(g::Game)
-    n = length(g.s.talon) - 1 # unkown talon
+    n = g.s.n_talon - 1 # unkown talon
     rootmoves = get_moves(g.s)
     local res
     if is_locked(g.s) || n ≤ 5
@@ -104,40 +105,6 @@ function analyze(rootmoves, values)
 end
 
 
-function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
-    if is_gameover(s)
-        mult = winner(s) == 1 ? 1 : -1
-        return mult * winscore(s) * 1000
-    end
-    if depth == 0
-        return playerscore(s, 1) - playerscore(s, 2)
-    end
-
-    ms = get_moves(s)
-    sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), rev=true)
-
-    if s.player_to_move == 1
-        val = -10_000
-        for m in ms
-            u = make_move!(s, m)
-            val = max(val, alphabeta(s, α, β, depth-1))
-            undo_move!(s, m, u)
-            α = max(α, val)
-            α ≥ β && break
-        end
-        return val
-    else
-        val = 10_000
-        for m in ms
-            u = make_move!(s, m)
-            val = min(val, alphabeta(s, α, β, depth-1))
-            undo_move!(s, m, u)
-            β = min(β, val)
-            β ≤ α && break
-        end
-        return val
-    end
-end
 
 function showdown_bestmove(s::Schnapsen)
     rootmoves = get_moves(s)
@@ -248,29 +215,3 @@ end
 #
 #     return append!(A, B)
 # end
-
-using BenchmarkTools
-@btime choose(ALLCARDS, 10)
-
-cards = all_cards()[7:end]
-
-permutations()
-
-@btime collect(combinations(all_cards(), 10))
-
-@time begin
-    cards = all_cards()[7:end]
-    _cards = copy(cards)
-    n = 0
-    m = 0
-    for hand in combinations(cards, 5)
-        # println(hand)
-        talon_cards = setdiff(_cards, hand)
-        for talon in permutations(talon_cards)
-            n += 1
-        end
-        m += 1
-        println(m, ": ", n)
-    end
-    n
-end

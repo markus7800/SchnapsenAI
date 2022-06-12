@@ -1,9 +1,58 @@
 
+mutable struct Undo
+    hand1::Cards
+    hand2::Cards
+
+    trickscore1::Int
+    trickscore2::Int
+    lasttrick::Int
+
+    call1::Int
+    call2::Int
+
+    player_to_move::Int
+    played_card::Card
+
+    n_talon::Int
+end
+
+#function Undo(s::Schnapsen)#, c1=Card(0), c2=Card(0))
+#    Undo(s.hand1, s.hand2, s.trickscore1, s.trickscore2, s.lasttrick,
+#        s.call1, s.call2, s.player_to_move, s.played_card, s.n_talon)
+#end
+
+function Undo()::Undo
+    Undo(NOCARDS, NOCARDS, 0, 0, 0, 0, 0, 0, NOCARD, 0)
+end
+
+function take_state!(undo::Undo, s::Schnapsen)
+    undo.hand1 = s.hand1
+    undo.hand2 = s.hand2
+
+    undo.trickscore1 = s.trickscore1
+    undo.trickscore2 = s.trickscore2
+    undo.lasttrick = s.lasttrick
+
+    undo.call1 = s.call1
+    undo.call2 = s.call2
+
+    undo.player_to_move = s.player_to_move
+    undo.played_card = s.played_card
+
+    undo.n_talon = s.n_talon
+end
+
 struct Move
     card::Card
     call::Bool
     lock::Bool
+    undo::Undo
 end
+
+function Move(card::Card, call::Bool, lock::Bool)
+    Move(card, call, lock, Undo())
+end
+
 
 function Base.show(io::IO, move::Move)
     print(io, move.card)
@@ -144,31 +193,11 @@ function get_moves(s::Schnapsen)
     return moves
 end
 
-mutable struct Undo
-    hand1::Cards
-    hand2::Cards
-
-    trickscore1::Int
-    trickscore2::Int
-    lasttrick::Int
-
-    call1::Int
-    call2::Int
-
-    player_to_move::Int
-    played_card::Card
-
-    n_talon::Int
-end
-
-function Undo(s::Schnapsen)#, c1=Card(0), c2=Card(0))
-    Undo(s.hand1, s.hand2, s.trickscore1, s.trickscore2, s.lasttrick,
-        s.call1, s.call2, s.player_to_move, s.played_card, s.n_talon)
-end
 
 function make_move!(s::Schnapsen, move::Move)::Undo
 
-    undo = Undo(s)
+    undo = move.undo
+    take_state!(undo, s)
 
     if s.player_to_move == 1
         @assert move.card in s.hand1

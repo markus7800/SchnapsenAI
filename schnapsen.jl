@@ -3,7 +3,8 @@ include("cards.jl")
 
 
 mutable struct Schnapsen
-    talon::Vector{Card}
+    talon::Vector{Card} # atoutcard is talon[0]
+    n_talon::Int
     atout::Cards
 
     hand1::Cards
@@ -25,6 +26,9 @@ end
 
 import Base.==
 function ==(l::Schnapsen, r::Schnapsen)
+    if l.n_talon != r.n_talon
+        return false
+    end
     if length(l.talon) != length(r.talon)
         return false
     end
@@ -96,6 +100,7 @@ function Schnapsen(seed=0)
 
     Schnapsen(
         cards,
+        10,
         atout,
 
         hand1,
@@ -138,7 +143,7 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
 
     if perspective == 0
         print(io, "Talon: ")
-        for card in s.talon
+        for card in s.talon[1:s.n_talon]
             print(io, card, " ")
         end
         println(io)
@@ -165,6 +170,11 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
     println(io, "Last trick: $(s.lasttrick)")
 
     print(io, "Next Player: $(s.player_to_move)")
+end
+
+import Base:stdout
+function print_schnapsen(s::Schnapsen, perspective=0)
+    show_schnapsen(stdout, s, perspective)
 end
 
 function is_locked(s::Schnapsen)
