@@ -8,8 +8,9 @@ function perft_debug(s::Schnapsen, depth::Int)
     end
     n = 0
     _s = deepcopy(s)
+    u = Undo()
     for m in get_moves(s)
-        u = make_move!(s, m)
+        make_move!(s, m, u)
         undo_move!(s, m, u)
         if s != _s
             println("board:")
@@ -22,7 +23,7 @@ function perft_debug(s::Schnapsen, depth::Int)
             println(u)
             error("NO!")
         end
-        u = make_move!(s, m)
+        make_move!(s, m, u)
         n += perft_debug(s, depth-1)
         undo_move!(s, m, u)
     end
@@ -33,7 +34,7 @@ end
 perft_debug(Schnapsen(), 10)
 
 
-function perft(s::Schnapsen, depth::Int, mls::Vector{MoveList})
+function perft(s::Schnapsen, depth::Int, mls::Vector{MoveList}, uls::Vector{Undo})
     if is_gameover(s)
         return 1
     end
@@ -46,9 +47,10 @@ function perft(s::Schnapsen, depth::Int, mls::Vector{MoveList})
         return length(movelist)
     end
     n = 0
+    u = uls[depth]
     for m in movelist
-        u = make_move!(s, m)
-        n += perft(s, depth-1, mls)
+        make_move!(s, m, u)
+        n += perft(s, depth-1, mls, uls)
         undo_move!(s, m, u)
     end
 
@@ -58,13 +60,14 @@ end
 
 using BenchmarkTools
 mls = [MoveList() for _ in 1:20]
-n = perft(Schnapsen(), 10, mls) # 13657610
-@btime perft(Schnapsen(), 10, mls) # 887.921 ms (15287080 allocations: 1.39 GiB) -> 275.501 ms (4167017 allocations: 381.50 MiB)
+uls = [Undo() for _ in 1:20]
+n = perft(Schnapsen(), 10, mls, uls) # 13657610
+@btime perft(Schnapsen(), 10, mls, uls) # 275.501 ms (4167017 allocations: 381.50 MiB) -> 210.799 ms (17 allocations: 1.96 KiB)
 
-n,t, = @timed perft(Schnapsen(), 11, mls)
+n,t, = @timed perft(Schnapsen(), 11, mls, uls)
 n / t
 
-# 15 mio per second
+# 38 -> 51 mio per second
 
 @btime alphabeta(Schnapsen(), -10_000, 10_000, 20) # 99.562 ms (1329217 allocations: 108.28 MiB)
 

@@ -161,14 +161,31 @@ mutable struct Undo
     n_talon::Int
 end
 
-function Undo(s::Schnapsen)#, c1=Card(0), c2=Card(0))
-    Undo(s.hand1, s.hand2, s.trickscore1, s.trickscore2, s.lasttrick,
-        s.call1, s.call2, s.player_to_move, s.played_card, s.n_talon)
+
+function Undo()::Undo
+    Undo(NOCARDS, NOCARDS, 0, 0, 0, 0, 0, 0, NOCARD, 0)
 end
 
-function make_move!(s::Schnapsen, move::Move)::Undo
+function take_state!(undo::Undo, s::Schnapsen)
+    undo.hand1 = s.hand1
+    undo.hand2 = s.hand2
 
-    undo = Undo(s)
+    undo.trickscore1 = s.trickscore1
+    undo.trickscore2 = s.trickscore2
+    undo.lasttrick = s.lasttrick
+
+    undo.call1 = s.call1
+    undo.call2 = s.call2
+
+    undo.player_to_move = s.player_to_move
+    undo.played_card = s.played_card
+
+    undo.n_talon = s.n_talon
+end
+
+function make_move!(s::Schnapsen, move::Move, undo::Undo)
+
+    take_state!(undo, s)
 
     if s.player_to_move == 1
         @assert move.card in s.hand1
@@ -261,7 +278,6 @@ function make_move!(s::Schnapsen, move::Move)::Undo
         s.played_card = NOCARD
     end
 
-    return undo
 end
 
 
