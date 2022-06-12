@@ -120,12 +120,12 @@ end
 
 
 function Base.show(io::IO, s::Schnapsen)
-    show_schnapsen(io, s)
+    show_schnapsen(io, s, s.player_to_move)
 end
 
 function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
     print(io, "Player 2: ")
-    if perspective == 2
+    if perspective != 1
         for card in s.hand2
             print(io, card, " ")
         end
@@ -153,7 +153,7 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
 
 
     print(io, "Player 1: ")
-    if perspective == 1
+    if perspective != 2
         for card in s.hand1
             print(io, card, " ")
         end

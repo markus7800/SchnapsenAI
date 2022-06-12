@@ -8,10 +8,10 @@ end
 function Base.show(io::IO, move::Move)
     print(io, move.card)
     if move.call
-        print(io, ", angesagt")
+        print(io, " angesagt")
     end
     if move.lock
-        print(io, ", zugedreht")
+        print(io, " zugedreht")
     end
 end
 
@@ -319,7 +319,7 @@ function move_value(s::Schnapsen, move::Move)
     end
 end
 
-
+# 10S az
 function stringtomove(str::String)
     sts = Dict('S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS)
     fs = Dict("J"=>JACK, "Q"=>QUEEN, "K"=>KING, "10"=>TEN, "A"=>ACE)
@@ -364,7 +364,7 @@ function user_input(s::Schnapsen)::Move
     return m
 end
 
-function playloop(s::Schnapsen; player1=userinput, player2=userinput)
+function playloop(s::Schnapsen; player1=user_input, player2=user_input)
     s = deepcopy(s)
 
     while !is_gameover(s)

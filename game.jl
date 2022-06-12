@@ -1,3 +1,5 @@
+include("alphabeta.jl")
+
 mutable struct Game
     s::Schnapsen
     played_cards::Cards
@@ -55,34 +57,127 @@ end
 
 function best_move(g::Game)
     n = length(g.s.talon) - 1 # unkown talon
-    if n ≤ 5 || is_locked(g.s)
-        # deterministic
+    rootmoves = get_moves(g.s)
+    local res
+    if is_locked(g.s) || n ≤ 5
+        res = determinitic_best_move(g, rootmoves)
+        analyze(rootmoves, res)
     else
-        # probalisitic
+        # [(10^5, 2), (10^5, 2)]
+        res = probabilistic_best_move(g, rootmoves, 10^5, 2)
+        analyze(rootmoves, res)
     end
 end
 
-function determinitic_best_move(g::Game, depth::Int)
-    rootmoves = get_moves(s)
-    values = [Int[] for m in rootmoves]
+function freq_table(A::Vector)
+    count_dict = Dict()
+    for a in A
+        c = get(count_dict, a, 0)
+        count_dict[a] = c + 1
+    end
 
+    count_dict
+end
+
+using Printf
+using Statistics
+function analyze(rootmoves, values)
+    for (rootmove, value) in zip(rootmoves, values)
+        if value isa Vector
+            terminal_games = value[abs.(value) .> 100]
+            terminal_perc = length(terminal_games) / length(value) * 100
+            other_games = value[abs.(value) .≤ 100]
+            other_perc = length(other_games) / length(value) * 100
+
+            score_mean = mean(other_games)
+            score_std = std(other_games)
+
+            terminal_mean = mean(terminal_games)
+            terminal_std = std(terminal_games)
+
+            table = freq_table(terminal_games)
+
+            println(@sprintf "%s: %d unfinished games (%.2f%%) score: %.2f ± %.2f" rootmove length(other_games) other_perc score_mean score_std)
+            println(@sprintf "\t\t%d terminal games (%.2f%%) score: %.2f ± %.2f outcomes: %s" terminal_perc length(terminal_games) terminal_mean terminal_std table)
+        end
+    end
+end
+
+
+function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int)
+    if is_gameover(s)
+        mult = winner(s) == 1 ? 1 : -1
+        return mult * winscore(s) * 1000
+    end
+    if depth == 0
+        return playerscore(s, 1) - playerscore(s, 2)
+    end
+
+    ms = get_moves(s)
+    sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), rev=true)
+
+    if s.player_to_move == 1
+        val = -10_000
+        for m in ms
+            u = make_move!(s, m)
+            val = max(val, alphabeta(s, α, β, depth-1))
+            undo_move!(s, m, u)
+            α = max(α, val)
+            α ≥ β && break
+        end
+        return val
+    else
+        val = 10_000
+        for m in ms
+            u = make_move!(s, m)
+            val = min(val, alphabeta(s, α, β, depth-1))
+            undo_move!(s, m, u)
+            β = min(β, val)
+            β ≤ α && break
+        end
+        return val
+    end
+end
+
+function showdown_bestmove(s::Schnapsen)
+    rootmoves = get_moves(s)
+    values = Int[]
+    for m in rootmoves
+        u = make_move!(s, m)
+        val = alphabeta(s,-10_000, 10_000, 20)
+        push!(values, val)
+        undo_move!(s, m, u)
+    end
+
+    return collect(zip(rootmoves, values))
+end
+
+function determinitic_best_move(g::Game, rootmoves::Vector{Move})
+    player = g.s.player_to_move
     hand = player == 1 ? g.s.hand1 : g.s.hand2
     cards = all_cards()
     cards = setdiff(cards, g.played_cards)
     cards = setdiff(cards, collect(hand))
-    cards = setdiff(cards, g.last_atout)
+    cards = setdiff(cards, [g.last_atout])
 
     _cards = copy(cards)
-    n = 0
-    m = 0
-    for opphand in combinations(cards, 5)
 
-        talon_cards = setdiff(_cards, hand)
+    n_games = binomial(length(cards), 5) * factorial(length(cards)-5)
+    values = [Vector{Int}(undef, n_games) for move in rootmoves]
+
+
+    for (m, opphand) in enumerate(combinations(cards, 5))
+        opphand = reduce(|, opphand, init=NOCARDS)
+
+        talon_cards = setdiff(_cards, opphand)
 
         hand1 = player == 1 ? hand : opphand
         hand2 = player == 2 ? hand : opphand
 
-        for talon in permutations(talon_cards)
+        for (n, talon) in enumerate(permutations(talon_cards))
+
+            pushfirst!(talon, g.last_atout)
+
             s = Schnapsen(talon, g.s.atout, hand1, hand2,
                 g.s.played_card,
                 g.s.lock,
@@ -99,24 +194,35 @@ function determinitic_best_move(g::Game, depth::Int)
 
             for (i, move) in enumerate(rootmoves)
                 u = make_move!(s, move)
-                val = alphabeta(s,-10_000, 10_000, depth-1)
-                push!(values, val)
+                values[i][n] = alphabeta(s,-10_000, 10_000, 20)
                 undo_move!(s, move, u)
             end
-
-
-            n += 1
         end
-        m += 1
-        println(m, ": ", n)
+
+        print("$m: $n")
     end
 
+    return values
+end
 
+function probabilistic_best_move(g::Game, rootmoves::Vector{Move}, n_iter::Int, depth::Int)
+    values = [Vector{Int}(undef, n_iter) for move in rootmoves]
 
-    return collect(zip(rootmoves, values))
+    for n in 1:n_iter
+        s = get_random_candidate_schnapsen(g)
+
+        for (i, move) in enumerate(rootmoves)
+            u = make_move!(s, move)
+            values[i][n] = alphabeta(s,-10_000, 10_000, depth-1)
+            undo_move!(s, move, u)
+        end
+    end
+
+    return values
 end
 
 function number_of_possible_games(n_talon::Int)
+    # opponent hand + order of talon
     binomial(n_talon + 5, 5) * factorial(n_talon)
 end
 
