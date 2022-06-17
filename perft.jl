@@ -71,6 +71,17 @@ n / t
 
 @btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 48.057 ms (17 allocations: 1.96 KiB) -> 34.345 ms (17 allocations: 1.96 KiB)
 
+ab = AlphaBeta(20)
+go(ab, Schnapsen())
+ab.n_nodes
+
+
+import JLD2
+JLD2.@load "showdowntable.jld2" table
+
+
+
+
 s = Schnapsen()
 s.lock = 1
 

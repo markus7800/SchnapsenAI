@@ -115,6 +115,12 @@ end
 
 table = gen_showdown_table()
 
+function lookup(table::Dict{Tuple{Cards, Cards}, Tuple{Int,Int}}, hand1::Cards, hand2::Cards, atout::Cards)::Tuple{Int,Int}
+    h1 = swap_suits(hand1, atout, HEARTS)
+    h2 = swap_suits(hand2, atout, HEARTS)
+    return table[(h1, h2)]
+end
+
 import JLD2
 
 JLD2.@save "showdowntable.jld2" table

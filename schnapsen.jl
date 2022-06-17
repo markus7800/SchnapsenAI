@@ -185,7 +185,9 @@ function playerscore(s::Schnapsen, player::Int)
     if score > 0
         # Hat der Spieler, der eine Ansage getätigt hat,
         # das gesamte Spiel über keinen Stich erzielt,
-        # zählen die durch die Ansage erzielten Augen nicht
+        # zählen die durch die Ansage erzielten Augen nicht.
+        # Wurde die Karte der Ansage gestochen und der Spieler erzielt später einen Stich,
+        # zählen die durch die Ansage erzielten Augen dennoch.
         # DRS: 20 bzw. 40 darf auch ohne einen Stich angesagt werden.
         # Die Punkte werden aber erst nach Erzielen eines Stiches gutgeschrieben.
         score += call

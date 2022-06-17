@@ -40,6 +40,66 @@ function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int, mls::Vector{MoveL
     end
 end
 
+mutable struct AlphaBeta
+    depth::Int
+    mls::Vector{MoveList}
+    uls::Vector{Undo}
+    showdown_table::Union{Dict{Tuple{Cards, Cards}, Tuple{Int,Int}}, Missing}
+    n_nodes::Int
+    function AlphaBeta(depth::Int; showdown_table=missing)
+        return new(
+            depth,
+            [MoveList() for _ in 1:20],
+            [Undo() for _ in 1:20],
+            showdown_table,
+            0,
+        )
+    end
+end
+
+function go(ab::AlphaBeta, s::Schnapsen)::Int
+    return alphabeta!(ab, s, -10_000, 10_000, ab.depth)
+end
+
+function alphabeta!(ab::AlphaBeta, s::Schnapsen, α::Int, β::Int, depth::Int)::Int
+    ab.n_nodes += 1
+    if is_gameover(s)
+        mult = winner(s) == 1 ? 1 : -1
+        return mult * winscore(s) * 1000
+    end
+    if depth == 0
+        return playerscore(s, 1) - playerscore(s, 2)
+    end
+
+    ms = ab.mls[depth]
+    recycle!(ms)
+    get_moves!(ms, s)
+    u = ab.uls[depth]
+
+    sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), alg=Base.Sort.QuickSort, rev=true)
+
+    if s.player_to_move == 1
+        val = -10_000
+        for m in ms
+            make_move!(s, m, u)
+            val = max(val, alphabeta!(ab, s, α, β, depth-1))
+            undo_move!(s, m, u)
+            α = max(α, val)
+            α ≥ β && break
+        end
+        return val
+    else
+        val = 10_000
+        for m in ms
+            make_move!(s, m, u)
+            val = min(val, alphabeta!(ab, s, α, β, depth-1))
+            undo_move!(s, m, u)
+            β = min(β, val)
+            β ≤ α && break
+        end
+        return val
+    end
+end
 
 
 # s = Schnapsen()

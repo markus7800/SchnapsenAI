@@ -49,10 +49,22 @@ struct Face
     f::UInt
 end
 
-const CLUBS = Cards(31)
-const SPADES = Cards(CLUBS.cs << 8)
-const DIAMONDS = Cards(SPADES.cs << 8)
-const HEARTS = Cards(DIAMONDS.cs << 8)
+const CLUBS = Cards(31)                 # 0000000000000000000000000000000000000000000000000000000000011111
+const SPADES = Cards(CLUBS.cs << 8)     # 0000000000000000000000000000000000000000000000000001111100000000
+const DIAMONDS = Cards(SPADES.cs << 8)  # 0000000000000000000000000000000000000000000111110000000000000000
+const HEARTS = Cards(DIAMONDS.cs << 8)  # 0000000000000000000000000000000000011111000000000000000000000000
+
+function swap_suits(cards::Cards, suit1::Cards, suit2::Cards)::Cards
+    l1 = trailing_zeros(suit1.cs)
+    l2 = trailing_zeros(suit2.cs)
+
+    cs = cards.cs ⊻ (cards.cs & suit1.cs)
+    cs = cs ⊻ (cards.cs & suit2.cs)
+    cs = cs | (((cards.cs & suit1.cs) >> l1) << l2)
+    cs = cs | (((cards.cs & suit2.cs) >> l2) << l1)
+
+    return Cards(cs)
+end
 
 const JACK = Face(2^0)
 const QUEEN = Face(2^1)
