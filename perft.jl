@@ -61,15 +61,15 @@ end
 using BenchmarkTools
 mls = [MoveList() for _ in 1:20]
 uls = [Undo() for _ in 1:20]
-n = perft(Schnapsen(), 10, mls, uls) # 13657610
-@btime perft(Schnapsen(), 10, mls, uls) # 275.501 ms (4167017 allocations: 381.50 MiB) -> 210.799 ms (17 allocations: 1.96 KiB)
+n = perft(Schnapsen(), 10, mls, uls) # 13657610 -> 26606264
+@btime perft(Schnapsen(), 10, mls, uls) # 210.799 ms (17 allocations: 1.96 KiB) -> 452.518 ms (17 allocations: 1.96 KiB)
 
 n,t, = @timed perft(Schnapsen(), 11, mls, uls)
 n / t
 
 # 38 -> 51 mio per second
 
-@btime alphabeta(Schnapsen(), -10_000, 10_000, 4, mls, uls) # 99.562 ms (1329217 allocations: 108.28 MiB) -> 48.057 ms (17 allocations: 1.96 KiB)
+@btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 48.057 ms (17 allocations: 1.96 KiB) -> 34.345 ms (17 allocations: 1.96 KiB)
 
 s = Schnapsen()
 s.lock = 1

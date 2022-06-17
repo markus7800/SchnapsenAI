@@ -1,3 +1,5 @@
+# http://schnapsen.realtype.at/index.php?page=spielregeln
+# https://de.wikipedia.org/wiki/Schnapsen#Die_Regeln
 
 struct Move
     card::Card
@@ -84,6 +86,18 @@ function get_moves!(moves::MoveList, s::Schnapsen)
 
     if s.played_card == NOCARD
         # Spieler muss Karte ausspielen
+
+        if s.n_talon ≥ 2 && !is_locked(s) && Card(s.atout, JACK) in hand
+            # Hält ein Spieler den Unter bzw. Buben der Trumpffarbe und ist am Zug,
+            # darf er vor seinem Zug diese Karte gegen die offen aufliegende Trumpffarbe „austauschen“.
+            # Die Vorhand darf die Trumpfkarte auch vor dem Ausspielen der ersten Karte austauschen.
+            # Liegt nur noch eine Karte als Talon auf der offenen Trumpfkarte, darf man austauschen, jedoch nicht zudrehen.
+            # DRS: Der Atout Bube darf auch ohne einen Stich ausgetauscht werden.
+            # DRS: Der Atout Bube darf auch noch ausgetauscht werden, wenn nur mehr eine verdeckte Karte am Stapel liegt.
+            push!(moves, Move(s.talon[1], false, false))
+            push!(moves, Move(s.talon[1], false, true))
+        end
+
         for card in hand
             f = face(card)
             st = suit(card)
@@ -92,16 +106,17 @@ function get_moves!(moves::MoveList, s::Schnapsen)
 
             if !is_locked(s) && s.n_talon ≥ 2
                 # auspielen mit zudrehen
-                # Zudrehen ist auch ohne einen Stich erlaubt.
-                # Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt.
+                # DRS: Zudrehen ist auch ohne einen Stich erlaubt.
+                # DRS: Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt.
+                # (nicht wie Wikipedia: Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt)
                 push!(moves, Move(card, false, true))
             end
 
             if (f == QUEEN && Card(st, KING) in hand) ||
                 (f == KING && Card(st, QUEEN) in hand)
-                # 20 bzw. 40 darf auch ohne einen Stich angesagt werden.
+                # DRS: 20 bzw. 40 darf auch ohne einen Stich angesagt werden.
                 # Die Punkte werden aber erst nach Erzielen eines Stiches gutgeschrieben.
-                # Beim Ansagen von 20 bzw. 40 darf die Dame oder der König gespielt werden.
+                # DRS: Beim Ansagen von 20 bzw. 40 darf die Dame oder der König gespielt werden.
 
                 # auspielen mit ansage
                 push!(moves, Move(card, true, false))
@@ -213,15 +228,25 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
     take_state!(undo, s)
 
     if s.player_to_move == 1
-        @assert move.card in s.hand1
+        if !(move.card in s.hand1)
+            # atout bube ausgetauscht
+            atoutjack = Card(s.atout, JACK)
+            @assert s.talon[1] == move.card && atoutjack in s.hand1
+            s.hand1 = remove(s.hand1, atoutjack)
+            s.talon[1] = atoutjack
+        else
+            s.hand1 = remove(s.hand1, move.card)
+        end
     else
-        @assert move.card in s.hand2
-    end
-
-    if s.player_to_move == 1
-        s.hand1 = remove(s.hand1, move.card)
-    else
-        s.hand2 = remove(s.hand2, move.card)
+        if !(move.card in s.hand2)
+            # atout bube ausgetauscht
+            atoutjack = Card(s.atout, JACK)
+            @assert s.talon[1] == move.card && atoutjack in s.hand2
+            s.hand2 = remove(s.hand2, atoutjack)
+            s.talon[1] = atoutjack
+        else
+            s.hand2 = remove(s.hand2, move.card)
+        end
     end
 
     if s.played_card == NOCARD
@@ -318,9 +343,15 @@ function undo_move!(s::Schnapsen, move::Move, undo::Undo)
     s.player_to_move = undo.player_to_move
 
     if undo.played_card == NOCARD
+        # karte wurde ausgespielt (weil vorher keine Karte ausgespielt war)
         if move.lock
             s.lock = 0
             s.opp_trickscore_at_lock = 0
+        end
+        if (undo.player_to_move == 1 && !(s.played_card in undo.hand1)) ||
+            (undo.player_to_move == 2 && !(s.played_card in undo.hand2))
+            # atoutbube ausgetauscht
+            s.talon[1] = s.played_card
         end
     end
 
@@ -328,6 +359,7 @@ function undo_move!(s::Schnapsen, move::Move, undo::Undo)
 
     s.hand1 = undo.hand1
     s.hand2 = undo.hand2
+
 
     s.played_card = undo.played_card
 end

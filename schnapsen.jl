@@ -3,7 +3,7 @@ include("cards.jl")
 
 
 mutable struct Schnapsen
-    talon::Vector{Card} # atoutcard is talon[0]
+    talon::Vector{Card} # atoutcard is talon[1]
     n_talon::Int
     atout::Cards
 
@@ -87,16 +87,6 @@ function Schnapsen(seed=0)
     atoutcard = cards[1]
     atout = suit(atoutcard)
     atoutjack = Card(atout, JACK)
-    if atoutjack in hand1
-        hand1 = remove(hand1, atoutjack)
-        hand1 = add(hand1, atoutcard)
-        cards[1] = atoutjack
-    end
-    if atoutjack in hand2
-        hand2 = remove(hand2, atoutjack)
-        hand2 = add(hand2, atoutcard)
-        cards[1] = atoutjack
-    end
 
     Schnapsen(
         cards,
@@ -141,13 +131,18 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
 
     println(io, "Played: $(s.played_card)")
 
-    if perspective == 0
-        print(io, "Talon: ")
-        for card in s.talon[1:s.n_talon]
+    print(io, "Talon: ")
+    print(io, s.talon[1], " | ")
+
+    for card in s.talon[2:s.n_talon]
+        if perspective == 0
             print(io, card, " ")
+        else
+            print(io, "??", " ")
         end
-        println(io)
     end
+    println(io)
+
 
     print(io, "atout: $(SUIT_SYMBOLS[s.atout]), ")
     if is_locked(s)
@@ -191,6 +186,8 @@ function playerscore(s::Schnapsen, player::Int)
         # Hat der Spieler, der eine Ansage getätigt hat,
         # das gesamte Spiel über keinen Stich erzielt,
         # zählen die durch die Ansage erzielten Augen nicht
+        # DRS: 20 bzw. 40 darf auch ohne einen Stich angesagt werden.
+        # Die Punkte werden aber erst nach Erzielen eines Stiches gutgeschrieben.
         score += call
     end
 
@@ -247,7 +244,7 @@ function winner(s::Schnapsen)
         # es gewinnt derjenige das Spiel, der den letzten Stich erzielt.
         # Wer den letzten Stich erzielen kann, spielt im Falle einer Talonsperre keine Rolle.
 
-        # Wenn kein Spieler im Spielverlauf ausruft, gilt der Gewinner des letzten Stichs als Sieger.
+        # DRS: Wenn kein Spieler im Spielverlauf ausruft, gilt der Gewinner des letzten Stichs als Sieger.
         return s.lasttrick
     end
 

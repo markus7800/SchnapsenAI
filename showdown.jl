@@ -114,6 +114,11 @@ function gen_showdown_table()
 end
 
 table = gen_showdown_table()
+
+import JLD2
+
+JLD2.@save "showdowntable.jld2" table
+
 #
 # binomial(20, 5) * binomial(15, 5) * 0.0001 / 60
 #
