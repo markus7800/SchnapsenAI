@@ -75,11 +75,18 @@ ab = AlphaBeta(20)
 go(ab, Schnapsen())
 ab.n_nodes
 
+ab = AlphaBeta(20)
+@btime begin
+    ab.n_nodes = 0
+    go(ab, Schnapsen())
+end
+
 
 import JLD2
 JLD2.@load "showdowntable.jld2" table
 
 
+go(ab, Schnapsen())
 
 
 s = Schnapsen()
