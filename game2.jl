@@ -68,6 +68,7 @@ function eval_lock_moves(game::Game)
             else
                 s.hand1 = opphand
             end
+
             make_move!(s, move, u)
             score = go(ab, s)
             undo_move!(s, move, u)
@@ -78,7 +79,7 @@ function eval_lock_moves(game::Game)
                 n_loose += score > 0
             end
         end
-        loosing_prob = n_loose / n_hands
+        losing_prob = n_loose / n_hands
         println("$(move): $(losing_prob)")
     end
 end
@@ -91,11 +92,66 @@ moves = get_moves(g.s)
 
 function number_of_possible_games(n_talon::Int)
     # opponent hand + order of talon
-    binomial(n_talon + 5, 5) * factorial(n_talon)
+    binomial(n_talon-1 + 5, 5) * factorial(n_talon-1)
+end
+
+function number_of_possible_games(n_talon::Int, depth::Int)
+    # opponent hand + choice of next "depth" talon cards + order of them
+    binomial(n_talon-1 + 5, 5) * binomial(n_talon-1, depth) * factorial(depth)
 end
 
 function print_number_of_possible_games()
-    for n in 9:-1:0
+    for n in 10:-1:^0
         println("$n: ", number_of_possible_games(n))
     end
 end
+
+import ProgressMeter
+function estimate_ab_time_at_depth(n_iter, depth)
+    times = zeros(20)
+    counts = zeros(Int, 20)
+
+    ab = AlphaBeta(depth)
+    movelist = MoveList()
+    u = Undo()
+    ProgressMeter.@showprogress for seed in 1:n_iter
+        s = Schnapsen(seed)
+        d = 20
+        while !is_gameover(s)
+            stats = @timed go(ab, s) # time in seconds
+            #println(d, ":, ", stats.time)
+            times[d] += stats.time
+            counts[d] += 1
+
+            recycle!(movelist)
+            get_moves!(movelist, s)
+            m = rand(movelist)
+            make_move!(s, m, u)
+            d -= 1
+        end
+    end
+
+    return times ./ counts
+end
+
+ms = get_moves(Schnapsen())
+
+r = estimate_ab_time_at_depth(10000, 4)
+n_games = [number_of_possible_games(max(d-10, 1)) for d in 1:20]
+
+using Printf
+for d in 12:20
+    perc = 10/r[d]/n_games[d]*100
+    perc = perc > 100 ? 100 : perc
+    @printf "Depth: %2d, Talon %1d Number of games %10d, ab time %.6fs, search all %10.2fs, %10.0f in 10s (%.2f%%)\n" d d-10 n_games[d] r[d] n_games[d]*r[d] 10/r[d] perc
+end
+
+# Depth 12-15 (Talon 2-5) full search possible
+# Depth 16: Full 37s Or 27% in 10s, d=10 12s or 83%
+# Depth 17: Full 1%, d=10 6%, d=4 8.82s
+# Depth 18: d=4 8% 350000
+# Depth 19: d=4 0.4% 200000
+# Depth 20: d=4 0.02% 150000
+r .* n_games
+
+10 ./ r
