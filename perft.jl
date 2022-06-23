@@ -1,6 +1,6 @@
 include("schnapsen.jl")
 include("alphabeta.jl")
-include("game.jl")
+include("pvs.jl")
 
 function perft_debug(s::Schnapsen, depth::Int)
     if depth == 1
@@ -81,6 +81,15 @@ ab = AlphaBeta(20)
     go(ab, Schnapsen())
 end
 
+pvs = PVS(20)
+go(pvs, Schnapsen())
+pvs.n_nodes
+
+pvs = PVS(20)
+@btime begin
+    ab.n_nodes = 0
+    go(pvs, Schnapsen())
+end
 
 import JLD2
 JLD2.@load "showdowntable.jld2" table

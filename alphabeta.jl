@@ -79,25 +79,27 @@ function alphabeta!(ab::AlphaBeta, s::Schnapsen, α::Int, β::Int, depth::Int)::
     sort!(ms, lt=(x,y) -> move_value(s,x) < move_value(s,y), alg=Base.Sort.QuickSort, rev=true)
 
     if s.player_to_move == 1
-        val = -10_000
+        #val = -10_000
         for m in ms
             make_move!(s, m, u)
-            val = max(val, alphabeta!(ab, s, α, β, depth-1))
+            #val = max(val, alphabeta!(ab, s, α, β, depth-1))
+            val = alphabeta!(ab, s, α, β, depth-1)
             undo_move!(s, m, u)
             α = max(α, val)
-            α ≥ β && break
+            α ≥ β && return β
         end
-        return val
+        return α
     else
-        val = 10_000
+        #val = 10_000
         for m in ms
             make_move!(s, m, u)
-            val = min(val, alphabeta!(ab, s, α, β, depth-1))
+            # val = min(val, alphabeta!(ab, s, α, β, depth-1))
+            val = alphabeta!(ab, s, α, β, depth-1)
             undo_move!(s, m, u)
             β = min(β, val)
-            β ≤ α && break
+            β ≤ α && return α
         end
-        return val
+        return β
     end
 end
 
