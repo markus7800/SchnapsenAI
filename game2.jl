@@ -5,8 +5,8 @@ mutable struct Game
     s::Schnapsen
     played_cards::Cards
     last_atout::Card
-    call::Card # TODO
-    atout_swap::Card # TODO
+    call::Card
+    atout_swap::Card
 end
 
 function Game(seed::Int)
@@ -50,7 +50,21 @@ function eval_lock_moves(game::Game)
     candidate_cards = remove(candidate_cards, game.last_atout)
     candidate_cards = remove(candidate_cards, player_hand)
 
-    n_hands = binomial(length(candidate_cards), length(real_opponent_hand))
+    n_opponent_hand = length(real_opponent_hand)
+    cards_add = NOCARDS
+    if game.atout_swap != NOCARD && !(game.atout_swap in game.played_cards)
+        candidate_cards = remove(candidate_cards, game.atout_swap)
+        cards_add = add(cards_add, game.atout_swap)
+        n_opponent_hand -= 1
+    end
+    if game.call != NOCARD && !(game.call in game.played_cards)
+        candidate_cards = remove(candidate_cards, game.call)
+        cards_add = add(cards_add, game.call)
+        n_opponent_hand -= 1
+    end
+
+
+    n_hands = binomial(length(candidate_cards), n_opponent_hand)
     println(n_hands, " possible opponent hands.")
 
     s = deepcopy(game.s)
@@ -61,8 +75,10 @@ function eval_lock_moves(game::Game)
     for move in movelist
         !move.lock && continue
         n_loose = 0
-        for (i, opphand) in enumerate(choose(candidate_cards, length(real_opponent_hand)))
-            # println(opphand)
+        for (i, opphand) in enumerate(choose(candidate_cards, n_opponent_hand))
+            opphand = add(opphand, cards_add)
+
+            #println(opphand)
             if s.player_to_move == 1
                 s.hand2 = opphand
             else
@@ -86,6 +102,8 @@ end
 
 
 g = Game(0)
+g.atout_swap = Card(SPADES, QUEEN)
+g.call = Card(HEARTS, QUEEN)
 @time eval_lock_moves(g)
 
 moves = get_moves(g.s)
