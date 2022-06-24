@@ -34,11 +34,11 @@ function Base.in(card::Card, cards::Cards)
 end
 
 function remove(cards::Cards, othercards::Cards)
-    Cards(cards.cs ⊻ othercards.cs)
+    Cards(cards.cs & ~othercards.cs)
 end
 
 function remove(cards::Cards, card::Card)
-    Cards(cards.cs ⊻ card.c)
+    Cards(cards.cs & ~card.c)
 end
 
 function add(cards::Cards, card::Card)

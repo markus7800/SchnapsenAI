@@ -61,19 +61,19 @@ end
 using BenchmarkTools
 mls = [MoveList() for _ in 1:20]
 uls = [Undo() for _ in 1:20]
-n = perft(Schnapsen(), 10, mls, uls) # 13657610 -> 26606264
-@btime perft(Schnapsen(), 10, mls, uls) # 210.799 ms (17 allocations: 1.96 KiB) -> 452.518 ms (17 allocations: 1.96 KiB)
+n = perft(Schnapsen(), 10, mls, uls) # 26606264 -> 21505774
+@btime perft(Schnapsen(), 10, mls, uls) # 452.518 ms (17 allocations: 1.96 KiB) -> 401.300 ms (17 allocations: 1.96 KiB)
 
 n,t, = @timed perft(Schnapsen(), 11, mls, uls)
 n / t
 
-# 38 -> 51 mio per second
+# 51 -> 48 mio per second
 
-@btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 48.057 ms (17 allocations: 1.96 KiB) -> 34.345 ms (17 allocations: 1.96 KiB)
+@btime alphabeta(Schnapsen(), -10_000, 10_000, 20, mls, uls) # 34.345 ms (17 allocations: 1.96 KiB) -> 42.029 ms (17 allocations: 1.96 KiB)
 
 ab = AlphaBeta(20)
 go(ab, Schnapsen())
-ab.n_nodes
+ab.n_nodes # 337850
 
 ab = AlphaBeta(20)
 @btime begin

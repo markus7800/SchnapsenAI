@@ -5,15 +5,22 @@ struct Move
     card::Card
     call::Bool
     lock::Bool
+    swap::Bool
 end
 
 function Base.show(io::IO, move::Move)
     print(io, move.card)
+    if move.call || move.lock || move.swap
+        print(io, " ")
+    end
     if move.call
-        print(io, " angesagt")
+        print(io, "a")
     end
     if move.lock
-        print(io, " zugedreht")
+        print(io, "z")
+    end
+    if move.swap
+        print(io, "t")
     end
 end
 
@@ -86,30 +93,33 @@ function get_moves!(moves::MoveList, s::Schnapsen)
 
     if s.played_card == NOCARD
         # Spieler muss Karte ausspielen
-
-        if s.n_talon ≥ 2 && !is_locked(s) && Card(s.atout, JACK) in hand
+        swap = false
+        atoutjack = Card(s.atout, JACK)
+        if s.n_talon ≥ 2 && !is_locked(s) && atoutjack in hand
             # Hält ein Spieler den Unter bzw. Buben der Trumpffarbe und ist am Zug,
             # darf er vor seinem Zug diese Karte gegen die offen aufliegende Trumpffarbe „austauschen“.
             # Die Vorhand darf die Trumpfkarte auch vor dem Ausspielen der ersten Karte austauschen.
             # Liegt nur noch eine Karte als Talon auf der offenen Trumpfkarte, darf man austauschen, jedoch nicht zudrehen.
             # DRS: Der Atout Bube darf auch ohne einen Stich ausgetauscht werden.
             # DRS: Der Atout Bube darf auch noch ausgetauscht werden, wenn nur mehr eine verdeckte Karte am Stapel liegt.
-            push!(moves, Move(s.talon[1], false, false))
-            push!(moves, Move(s.talon[1], false, true))
+            swap = true
+            push!(moves, Move(s.talon[1], false, false, true))
+            push!(moves, Move(s.talon[1], false, true, true))
         end
 
         for card in hand
             f = face(card)
             st = suit(card)
             # normales auspielen
-            push!(moves, Move(card, false, false))
+            # immer austauschen, außer wenn man bube auspielen will, reduziert moves
+            push!(moves, Move(card, false, false, swap && card != atoutjack))
 
             if !is_locked(s) && s.n_talon ≥ 2
                 # auspielen mit zudrehen
                 # DRS: Zudrehen ist auch ohne einen Stich erlaubt.
                 # DRS: Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt.
                 # (nicht wie Wikipedia: Zudrehen ist auch erlaubt, wenn nur mehr eine verdeckte Karte am Stapel liegt)
-                push!(moves, Move(card, false, true))
+                push!(moves, Move(card, false, true, swap && card != atoutjack))
             end
 
             if (f == QUEEN && Card(st, KING) in hand) ||
@@ -119,11 +129,11 @@ function get_moves!(moves::MoveList, s::Schnapsen)
                 # DRS: Beim Ansagen von 20 bzw. 40 darf die Dame oder der König gespielt werden.
 
                 # auspielen mit ansage
-                push!(moves, Move(card, true, false))
+                push!(moves, Move(card, true, false, swap))
 
                 if !is_locked(s) && s.n_talon ≥ 2
                     # auspielen mit ansage und zudrehen
-                    push!(moves, Move(card, true, true))
+                    push!(moves, Move(card, true, true, swap))
                 end
             end
         end
@@ -172,7 +182,7 @@ function get_moves!(moves::MoveList, s::Schnapsen)
                 end
             end
 
-            push!(moves, Move(card, false, false))
+            push!(moves, Move(card, false, false, false))
         end
     end
 
@@ -228,25 +238,25 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
     take_state!(undo, s)
 
     if s.player_to_move == 1
-        if !(move.card in s.hand1)
+        if move.swap
             # atout bube ausgetauscht
             atoutjack = Card(s.atout, JACK)
-            @assert s.talon[1] == move.card && atoutjack in s.hand1
+            @assert atoutjack in s.hand1
             s.hand1 = remove(s.hand1, atoutjack)
+            s.hand1 = add(s.hand1, s.talon[1])
             s.talon[1] = atoutjack
-        else
-            s.hand1 = remove(s.hand1, move.card)
         end
+        s.hand1 = remove(s.hand1, move.card)
     else
         if !(move.card in s.hand2)
             # atout bube ausgetauscht
             atoutjack = Card(s.atout, JACK)
-            @assert s.talon[1] == move.card && atoutjack in s.hand2
+            @assert atoutjack in s.hand2
             s.hand2 = remove(s.hand2, atoutjack)
+            s.hand2 = add(s.hand2, s.talon[1])
             s.talon[1] = atoutjack
-        else
-            s.hand2 = remove(s.hand2, move.card)
         end
+        s.hand2 = remove(s.hand2, move.card)
     end
 
     if s.played_card == NOCARD
@@ -348,10 +358,24 @@ function undo_move!(s::Schnapsen, move::Move, undo::Undo)
             s.lock = 0
             s.opp_trickscore_at_lock = 0
         end
-        if (undo.player_to_move == 1 && !(s.played_card in undo.hand1)) ||
-            (undo.player_to_move == 2 && !(s.played_card in undo.hand2))
+        if move.swap
             # atoutbube ausgetauscht
-            s.talon[1] = s.played_card
+            if  undo.player_to_move == 1
+                hand_before = undo.hand1
+                hand_after = s.hand1
+            else
+                hand_before = undo.hand2
+                hand_after = s.hand2
+            end
+            h = remove(hand_after, hand_before) # has swapped card or is empty
+            #println(move, ": ", hand_after, " - ", hand_before, " = ", h)
+            if h == NOCARDS
+                # ausgetauscht und ausgespielt
+                s.talon[1] = s.played_card
+            else
+                # ausgetauscht und behalten
+                s.talon[1] = Card(h.cs)
+            end
         end
     end
 
@@ -469,13 +493,15 @@ function stringtomove(str::String)
 
     call = false
     lock = false
+    swap = false
 
     if length(sgroups) > 1
-        call = occursin("a", sgroups[2])
-        lock = occursin("z", sgroups[2])
+        call = occursin("a", sgroups[2]) # ansagen
+        lock = occursin("z", sgroups[2]) # zudrehen
+        swap = occursin("t", sgroups[2]) # tauschen
     end
 
-    return Move(card, call, lock)
+    return Move(card, call, lock, swap)
 end
 
 function user_input(s::Schnapsen)::Move

@@ -16,12 +16,37 @@ function Game(seed::Int)
 end
 
 function Base.show(io::IO, game::Game)
+    println(io, "Schnapsen Game:")
     show_schnapsen(io, game.s, game.s.player_to_move)
+    println(io, "\nPlayed cards: $(game.played_cards), last_atout $(game.last_atout), call: $(game.call), atout_swap $(game.atout_swap).")
 end
 
 import Base:stdout
 function print_game(game::Game, perspective=0)
-    show_schnapsen(stdout, game.s, perspective)
+    Base.show(stdout, game.s, perspective)
+end
+
+function play_move!(game::Game, m::Move)
+    legal_moves = get_moves(game.s)
+    @assert m in legal_moves "Illegal move $m : $legal_moves"
+    game.played_cards = add(game.played_cards, m.card)
+    if m.call
+        spouse = face(m.card) == KING ? QUEEN : KING
+        game.call = Card(suit(m.card), spouse)
+    end
+
+    if m.swap
+        game.atout_swap = game.s.talon[1] # before we make move
+    end
+
+    u = Undo()
+    make_move!(game.s, m, u)
+    game.last_atout = game.s.talon[1]
+end
+
+
+function play_move!(game::Game, m::String)
+    play_move!(game, stringtomove(m))
 end
 
 function choose(cards::Cards, k::Int)::Vector{Cards}
@@ -42,7 +67,7 @@ function choose(cards::Cards, k::Int)::Vector{Cards}
     return append!(A, B)
 end
 
-function eval_lock_moves(game::Game)
+function get_candidate_cards(game::Game)
     player_hand = game.s.player_to_move == 1 ? game.s.hand1 : game.s.hand2
     real_opponent_hand = game.s.player_to_move == 1 ? game.s.hand2 : game.s.hand1
 
@@ -63,9 +88,14 @@ function eval_lock_moves(game::Game)
         n_opponent_hand -= 1
     end
 
+    return candidate_cards, n_opponent_hand, cards_add
+end
+
+function eval_lock_moves(game::Game)
+    candidate_cards, n_opponent_hand, cards_add = get_candidate_cards(game)
 
     n_hands = binomial(length(candidate_cards), n_opponent_hand)
-    println(n_hands, " possible opponent hands.")
+    println(length(candidate_cards), " unseen cards + ", n_opponent_hand, " unkown opponent cards = ", n_hands, " possible opponent hands.")
 
     s = deepcopy(game.s)
     movelist = MoveList()
@@ -73,7 +103,7 @@ function eval_lock_moves(game::Game)
     u = Undo()
     ab = AlphaBeta(20)
     for move in movelist
-        !move.lock && continue
+        !is_locked(s) && !move.lock && continue
         n_loose = 0
         for (i, opphand) in enumerate(choose(candidate_cards, n_opponent_hand))
             opphand = add(opphand, cards_add)
@@ -100,11 +130,34 @@ function eval_lock_moves(game::Game)
     end
 end
 
+function eval_moves_full(game::Game)
+    if is_locked(game.s)
+        return eval_lock_moves(game)
+    end
+
+    candidate_cards, n_opponent_hand, cards_add = get_candidate_cards(game)
+
+    n_talon = game.s.n_talon
+    if n_talon > 0
+        n_hands = binomial(length(candidate_cards), n_opponent_hand) * factorial(n_talon-1)
+    else
+        n_hands = binomial(length(candidate_cards), n_opponent_hand)
+    end
+
+    println(length(candidate_cards), " unseen cards + ", n_opponent_hand, " unkown opponent cards + ", n_talon, " talon cards = ", n_hands, " possible opponent hands.")
+end
+
 
 g = Game(0)
-g.atout_swap = Card(SPADES, QUEEN)
-g.call = Card(HEARTS, QUEEN)
+play_move!(g, stringtomove("AS t"))
+play_move!(g, stringtomove("JD"))
+
+
+play_move!(g, stringtomove("AH"))
+play_move!(g, stringtomove("10S"))
+
 @time eval_lock_moves(g)
+@time eval_moves_full(g)
 
 moves = get_moves(g.s)
 
