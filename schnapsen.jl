@@ -126,7 +126,7 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
         end
         println(io, ", $(s.trickscore2) (+ $(s.call2))")
     else
-        println(io, "* * * * *")
+        println(io, "* "^length(s.hand2))
     end
 
     println(io, "Played: $(s.played_card)")
@@ -159,7 +159,7 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
         end
         println(io, ", $(s.trickscore1) (+ $(s.call1))")
     else
-        println(io, "* * * * *")
+        println(io, "* "^length(s.hand1))
     end
 
     println(io, "Last trick: $(s.lasttrick)")

@@ -481,7 +481,10 @@ end
 
 # 10S az
 function stringtomove(str::String)
-    sts = Dict('S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS)
+    sts = Dict(
+        'S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS,
+        '♠'=>SPADES, '♡'=>HEARTS, '♢'=>DIAMONDS, '♣'=>CLUBS
+        )
     fs = Dict("J"=>JACK, "Q"=>QUEEN, "K"=>KING, "10"=>TEN, "A"=>ACE)
 
     sgroups = split(str, " ")
