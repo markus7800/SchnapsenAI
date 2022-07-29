@@ -1,4 +1,7 @@
 
+include("game2.jl")
+
+
 @time best_AB_move(g)
 @time eval_lock_moves(g)
 @time eval_moves_full(g)
@@ -124,7 +127,7 @@ end
 
 ms = get_moves(Schnapsen())
 
-r = estimate_ab_time_at_depth(10000, 4)
+r = estimate_ab_time_at_depth(10000, 20)
 n_games = [number_of_possible_games(max(d-10, 1)) for d in 1:20]
 
 using Printf
