@@ -24,11 +24,23 @@ Random.seed!(0)
 
 g = Game(0)
 # 2500
+eval_moves_prob(g, 2500) # 7min
+
 play_move!(g, stringtomove("10♣ t")) # 10♣ t: 0.5784 1000 (AB: K♣ t 2000, 10♡ 2000)
+eval_moves_prob(g, 2500) # 2min
+
 play_move!(g, stringtomove("A♣")) # A♣: 0.672 1000 (A♣: 1000.0)
+eval_moves_prob(g, 2500) # 1min
 
 play_move!(g, stringtomove("J♢")) # J♢: 0.708 2000
+eval_moves_prob(g, 2500) # 17s
+eval_moves_prob(g, 10000) # 1min
+
 play_move!(g, stringtomove("10♢")) # 10♢: 0.752 (10♢: 2000)
+eval_moves_prob(g, 2500) # 10s
+eval_moves_prob(g, 10000) # 40s
+@time eval_moves_full(g) # 2min
+
 
 # full
 
@@ -127,7 +139,7 @@ end
 
 ms = get_moves(Schnapsen())
 
-r = estimate_ab_time_at_depth(10000, 20)
+r = estimate_ab_time_at_depth(100, 20)
 n_games = [number_of_possible_games(max(d-10, 1)) for d in 1:20]
 
 using Printf

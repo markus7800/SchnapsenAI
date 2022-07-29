@@ -180,18 +180,30 @@ function eval_moves_full(game::Game)
     println(" + ", n_talon, " talon cards = ", n_games, " games")
 
 
-    s = deepcopy(game.s)
-    movelist = MoveList()
-    get_moves!(movelist, s)
-    u = Undo()
-    ab = AlphaBeta(20)
-    remaining_cards = NOCARDS
-    n_lost = zeros(Int, length(movelist))
+    nthreads = Threads.nthreads()
 
-    n_lost = zeros(length(movelist))
+    s_copies = [deepcopy(game.s) for _ in 1:nthreads]
+    u_copies = [Undo() for _ in 1:nthreads]
+    ab_copies = [AlphaBeta(20) for _ in 1:nthreads]
+
+    movelist = MoveList()
+    get_moves!(movelist, game.s)
+
+    n_lost = zeros(Int, length(movelist), nthreads)
+
+    opponent_hands = collect(choose(candidate_cards, n_opponent_hand))
+
+    progressbar = ProgressMeter.Progress(length(opponent_hands) * length(movelist))
+
     for (movenumber, move) in enumerate(movelist)
-        count = 0
-        ProgressMeter.@showprogress "Move: $move" for (i, opphand) in enumerate(choose(candidate_cards, n_opponent_hand))
+        #count = 0
+        Threads.@threads for i in 1:length(opponent_hands)
+            tid = Threads.threadid()
+            u = u_copies[tid]
+            ab = ab_copies[tid]
+            s = s_copies[tid]
+
+            opphand = opponent_hands[i]
             opphand = add(opphand, cards_add)
 
             if s.player_to_move == 1
@@ -206,7 +218,7 @@ function eval_moves_full(game::Game)
             @assert length(remaining_cards) == n_talon-1
             #println(remaining_cards, collect(remaining_cards), length(permutations(collect(remaining_cards))))
             for p in permutations(collect(remaining_cards))
-                count += 1
+                #count += 1
                 for j in 2:n_talon
                     s.talon[j] = p[j-1]
                 end
@@ -216,16 +228,19 @@ function eval_moves_full(game::Game)
                 undo_move!(s, move, u)
 
                 if s.player_to_move == 1
-                    n_lost[movenumber] += score < 0
+                    n_lost[movenumber, tid] += score < 0
                 else
-                    n_lost[movenumber] += score > 0
+                    n_lost[movenumber, tid] += score > 0
                 end
             end
-
+            ProgressMeter.next!(progressbar)
             #println(opphand)
         end
-        @assert count == n_games
+        #@assert count == n_games
     end
+
+    n_lost = vec(sum(n_lost, dims=2))
+
     losing_prob = n_lost ./ n_games
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
