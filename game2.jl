@@ -231,6 +231,34 @@ function eval_moves_full(game::Game)
     return movelist, losing_prob
 end
 
+
+# X_i ~ Bernoulli(p)
+# ̂p = 1/N sum_{i=1}^N X_i ~ 1/N Binom(p, N)
+# -> Var(̂p) = 1/N^2 N p(1-p) = p (1-p) / N < 1 / 4N
+
+
+# Beta(1,1) = Unif(0,1) p-prior
+# Bernoulli conjugate
+# Beta(1 + ∑X_i, 1 + N - ∑ X_i) posterior
+# var = α β / ((α + β)^2 (α + β + 1)) ≈ α β / N^3 ≈ p (1-p) / N < 1 / 4N
+
+# -> std < 1 / 2√N
+1 / (2 * sqrt(2500))
+
+function get_freq_std(n_iter::Int, n_lost::Int)
+    N = n_iter
+    s = n_lost
+    return sqrt(1/(N-1) * (s*(1-s/N)^2 + (N-s)*(s/N)^2))
+end
+
+function get_bayesian_std(n_iter::Int, n_lost::Int)
+    N = n_iter
+    s = n_lost
+    α = 1 + s
+    β = 1 + N - s
+    return sqrt(α * β / ((α + β)^2 * (α + β + 1)))
+end
+
 function eval_moves_prob(game::Game, n_iter::Int)
     if is_locked(game.s)
         return eval_lock_moves(game)
@@ -248,59 +276,74 @@ function eval_moves_prob(game::Game, n_iter::Int)
     println(length(candidate_cards), " unseen cards + ", n_opponent_hand, " unkown opponent cards = ", binomial(length(candidate_cards), n_opponent_hand), " possible opponent hands.")
     println(" + ", n_talon, " talon cards = ", n_games, " games")
 
+    nthreads = Threads.nthreads()
 
-    s = deepcopy(game.s)
+    s_copies = [deepcopy(game.s) for _ in 1:nthreads]
+    u_copies = [Undo() for _ in 1:nthreads]
+    ab_copies = [AlphaBeta(20) for _ in 1:nthreads]
+
     movelist = MoveList()
-    get_moves!(movelist, s)
-    u = Undo()
-    ab = AlphaBeta(20)
+    get_moves!(movelist, game.s)
+
     candidate_cards = collect(candidate_cards)
     sampled_cards = copy(candidate_cards)
 
-    n_lost = zeros(Int, length(movelist))
+    n_lost = zeros(Int, length(movelist), nthreads)
 
     ProgressMeter.@showprogress for iter in 1:n_iter
         sample!(candidate_cards, sampled_cards, replace=false)
-        opphand = cards_add
-        i = 1
-        for _ in 1:n_opponent_hand
-            opphand = add(opphand, sampled_cards[i])
-            i += 1
-        end
-        if s.player_to_move == 1
-            s.hand2 = opphand
-        else
-            s.hand1 = opphand
-        end
-        for j in 2:n_talon
-            s.talon[j] = sampled_cards[i]
-            i += 1
+
+        for s in s_copies
+            opphand = cards_add
+            i = 1
+            for _ in 1:n_opponent_hand
+                opphand = add(opphand, sampled_cards[i])
+                i += 1
+            end
+
+            if s.player_to_move == 1
+                s.hand2 = opphand
+            else
+                s.hand1 = opphand
+            end
+            for j in 2:n_talon
+                s.talon[j] = sampled_cards[i]
+                i += 1
+            end
         end
 
-        for (movenumber, move) in enumerate(movelist)
+        Threads.@threads for movenumber in 1:length(movelist)
+            move = movelist[movenumber]
             move.lock && continue
+            tid = Threads.threadid()
+            s = s_copies[tid]
+            u = u_copies[tid]
+            ab = ab_copies[tid]
+
             make_move!(s, move, u)
             score = go(ab, s)
             undo_move!(s, move, u)
 
             if s.player_to_move == 1
-                n_lost[movenumber] += score < 0
+                n_lost[movenumber, tid] += score < 0
             else
-                n_lost[movenumber] += score > 0
+                n_lost[movenumber, tid] += score > 0
             end
         end
     end
 
-    losing_prob = n_lost ./ n_iter
+    n_lost = vec(sum(n_lost, dims=2))
+    losing_prob = n_lost ./ n_iter # s/n
 
     mask = [!m.lock for m in movelist]
+    n_lost = n_lost[mask]
     losing_prob = losing_prob[mask]
     movelist = MoveList(movelist[mask])
 
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
+        @printf("%6s: %.4f ± %.4f %s\n", move, losing_prob[movenumber], get_bayesian_std(n_iter, n_lost[movenumber]), asterix)
     end
     return movelist, losing_prob
 end
@@ -332,7 +375,22 @@ end
 @time best_AB_move(g)
 @time eval_lock_moves(g)
 @time eval_moves_full(g)
+
+Random.seed!(0)
 @time eval_moves_prob(g, 2500)
+
+# @time eval_moves_prob(g, 2500) new game
+# 13:42 -> 7:26 at 65 % load macbook
+# 822.231530 seconds (1.72 M allocations: 87.468 MiB, 0.00% gc time, 0.05% compilation time)
+# A♠ t: 0.8284
+# K♣ t: 0.6560
+# 10♣ t: 0.5792 *
+#   J♠: 0.9224
+# 10♢ t: 0.6580
+# 10♡ t: 0.6628
+
+# 2 moves deep: 2:05
+# 4 moves deep 0:20 -> 12s
 
 g = Game(0)
 # 2500
