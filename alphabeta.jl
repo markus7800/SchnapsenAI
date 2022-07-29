@@ -1,7 +1,7 @@
 
 
 
-function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int, mls::Vector{MoveList}, uls::Vector{Undo})
+function alphabeta(s::Schnapsen, α::Int, β::Int, depth::Int, mls::Vector{MoveList}, uls::Vector{Undo})::Int
     if is_gameover(s)
         mult = winner(s) == 1 ? 1 : -1
         return mult * winscore(s) * 1000

@@ -68,6 +68,15 @@ function MoveList()
     MoveList(Array{Move}(undef, 20), 0)
 end
 
+function MoveList(moves::Vector{Move})
+    list = MoveList()
+    for (i,m) in enumerate(moves)
+        list[i] = m
+    end
+    list.count = length(moves)
+    return list
+end
+
 function Base.push!(list::MoveList, m::Move)
     list.count += 1
     list.moves[list.count] = m
@@ -79,6 +88,7 @@ function Base.push!(list::MoveList, m::Move)
     list.moves[list.count] = m
 end
 
+# make sure to have i <= list.count
 function Base.setindex!(list::MoveList, v::Move, i::Int)
     list.moves[i] = v
 end

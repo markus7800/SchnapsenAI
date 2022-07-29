@@ -1,5 +1,6 @@
 include("schnapsen.jl")
 include("alphabeta.jl")
+using Printf
 
 mutable struct Game
     s::Schnapsen
@@ -142,11 +143,15 @@ function eval_lock_moves(game::Game)
         end
     end
     losing_prob = n_lost ./ n_hands
+
+    mask = [is_locked(s) || m.lock for m in movelist]
+    losing_prob = losing_prob[mask]
+    movelist = MoveList(movelist[mask])
+
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
-        !is_locked(s) && !move.lock && continue
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        println("$(move):\t$(losing_prob[movenumber]) $asterix")
+        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
     end
     return movelist, losing_prob
 end
@@ -221,7 +226,7 @@ function eval_moves_full(game::Game)
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        println("$(move):\t$(losing_prob[movenumber]) $asterix")
+        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
     end
     return movelist, losing_prob
 end
@@ -287,11 +292,15 @@ function eval_moves_prob(game::Game, n_iter::Int)
     end
 
     losing_prob = n_lost ./ n_iter
+
+    mask = [!m.lock for m in movelist]
+    losing_prob = losing_prob[mask]
+    movelist = MoveList(movelist[mask])
+
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
-        move.lock && continue
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        println("$(move):\t$(losing_prob[movenumber]) $asterix")
+        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
     end
     return movelist, losing_prob
 end
@@ -314,7 +323,7 @@ function best_AB_move(game::Game)
     for (movenumber, move) in enumerate(movelist)
         move.lock && continue
         asterix = scores[movenumber] == best_score ? "*" : ""
-        println("$(move):\t$(scores[movenumber]) $asterix")
+        @printf("%6s: %7.1f %s\n", move, scores[movenumber], asterix)
     end
     println("Best score: $best_score; player to move $(s.player_to_move)")
     return movelist, scores
