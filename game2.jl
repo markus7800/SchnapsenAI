@@ -13,6 +13,10 @@ end
 
 function Game(seed::Int)
     s = Schnapsen(seed)
+    return Game(s)
+end
+
+function Game(s::Schnapsen)
     played_cards = NOCARDS
     return Game(s, played_cards, s.talon[1], [], NOCARD, 0)
 end
