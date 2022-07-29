@@ -286,39 +286,39 @@ function eval_moves_prob(game::Game, n_iter::Int)
     get_moves!(movelist, game.s)
 
     candidate_cards = collect(candidate_cards)
-    sampled_cards = copy(candidate_cards)
+    sampled_cards_copies = [copy(candidate_cards) for _ in 1:nthreads]
 
     n_lost = zeros(Int, length(movelist), nthreads)
+    progressbar = ProgressMeter.Progress(n_iter)
+    Threads.@threads for iter in 1:n_iter
+        tid = Threads.threadid()
+        sampled_cards = sampled_cards_copies[tid]
+        u = u_copies[tid]
+        ab = ab_copies[tid]
+        s = s_copies[tid]
 
-    ProgressMeter.@showprogress for iter in 1:n_iter
         sample!(candidate_cards, sampled_cards, replace=false)
 
-        for s in s_copies
-            opphand = cards_add
-            i = 1
-            for _ in 1:n_opponent_hand
-                opphand = add(opphand, sampled_cards[i])
-                i += 1
-            end
-
-            if s.player_to_move == 1
-                s.hand2 = opphand
-            else
-                s.hand1 = opphand
-            end
-            for j in 2:n_talon
-                s.talon[j] = sampled_cards[i]
-                i += 1
-            end
+        opphand = cards_add
+        i = 1
+        for _ in 1:n_opponent_hand
+            opphand = add(opphand, sampled_cards[i])
+            i += 1
         end
 
-        Threads.@threads for movenumber in 1:length(movelist)
+        if s.player_to_move == 1
+            s.hand2 = opphand
+        else
+            s.hand1 = opphand
+        end
+        for j in 2:n_talon
+            s.talon[j] = sampled_cards[i]
+            i += 1
+        end
+
+        for movenumber in 1:length(movelist)
             move = movelist[movenumber]
             move.lock && continue
-            tid = Threads.threadid()
-            s = s_copies[tid]
-            u = u_copies[tid]
-            ab = ab_copies[tid]
 
             make_move!(s, move, u)
             score = go(ab, s)
@@ -330,6 +330,8 @@ function eval_moves_prob(game::Game, n_iter::Int)
                 n_lost[movenumber, tid] += score > 0
             end
         end
+
+        ProgressMeter.next!(progressbar)
     end
 
     n_lost = vec(sum(n_lost, dims=2))
