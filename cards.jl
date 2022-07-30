@@ -28,6 +28,10 @@ function Base.:|(left::Cards, right::Card)::Cards
     return Cards(left.cs | right.c)
 end
 
+function Base.:|(left::Card, right::Card)::Cards
+    return Cards(left.c | right.c)
+end
+
 
 function Base.in(card::Card, cards::Cards)
     card.c & cards.cs > 0

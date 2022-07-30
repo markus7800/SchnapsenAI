@@ -54,10 +54,8 @@ function play_move!(game::Game, m::Move)
         game.atout_swap_player = game.s.player_to_move
     end
 
-    u = Undo()
-    make_move!(game.s, m, u)
+    make_move!(game.s, m, Undo())
     game.last_atout = game.s.talon[1]
-
     m
 end
 
@@ -66,6 +64,8 @@ function play_move!(game::Game, m::String)
     play_move!(game, stringtomove(m))
 end
 
+include("play_draw.jl")
+s
 function choose(cards::Cards, k::Int)::Vector{Cards}
     n = length(cards)
     if n == 0 && k > 0

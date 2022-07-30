@@ -42,6 +42,12 @@ eval_moves_prob(g, 10000) # 40s
 @time eval_moves_full(g) # 2min
 
 
+s = Schnapsen("KC 10C JS 10D 10H", "AS")
+g = Game(s)
+eval_moves_prob(g, 2500)
+
+
+
 # full
 
 @time eval_lock_moves(g)

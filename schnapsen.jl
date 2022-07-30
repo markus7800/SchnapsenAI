@@ -309,4 +309,161 @@ function winscore(s::Schnapsen)
     end
 end
 
+
+# 10S
+const string_to_suite = Dict(
+    'S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS,
+    '♠'=>SPADES, '♡'=>HEARTS, '♢'=>DIAMONDS, '♣'=>CLUBS
+    )
+const string_to_face = Dict("J"=>JACK, "Q"=>QUEEN, "K"=>KING, "10"=>TEN, "A"=>ACE)
+
+
+function stringtocard(str::AbstractString)::Card
+    sgroups = split(str, " ")
+
+    f = sgroups[1][1:end-1]
+    st = sgroups[1][end]
+
+    card = Card(string_to_suite[st], string_to_face[f])
+    return card
+end
+
+function Schnapsen(hand1::String, hand2::String, talon::String)
+
+    h1 = NOCARDS
+    for c_str in split(hand1, " ")
+        card = stringtocard(c_str)
+        #println(c_str, ": ", card)
+        h1 = add(h1, card)
+    end
+
+    h2 = NOCARDS
+    for c_str in split(hand2, " ")
+        card = stringtocard(c_str)
+        #println(c_str, ": ", card)
+        h2 = add(h2, card)
+    end
+
+    t = Vector{Card}()
+    for c_str in split(talon, " ")
+        card = stringtocard(c_str)
+        # println(c_str, ": ", card)
+        push!(t, card)
+    end
+
+    s = Schnapsen()
+    s.hand1 = h1
+    s.hand2 = h2
+    s.talon = t
+    s.atout = suit(s.talon[1])
+    return s
+end
+
+
+function Schnapsen(hand1::String, last_atout::String)
+
+    h1 = NOCARDS
+    for c_str in split(hand1, " ")
+        card = stringtocard(c_str)
+        #println(c_str, ": ", card)
+        h1 = add(h1, card)
+    end
+
+    last_atout = stringtocard(last_atout)
+    remaining = remove(ALLCARDS, h1)
+    remaining = remove(remaining, last_atout)
+    remaining = collect(remaining)
+
+    h2 = reduce(|, remaining[1:5]) # just fill hand2
+
+    t = fill(NOCARD, 10)
+    t[2:10] = remaining[6:end] # just fill talon
+    t[1] = last_atout
+
+    s = Schnapsen()
+    s.hand1 = h1
+    s.hand2 = h2
+    s.talon = t
+    s.atout = suit(s.talon[1])
+    return s
+end
+
+
+function Schnapsen(hand::String, last_atout::String, oppmove::String)
+
+    # build opponent hand such that oppmove is legal
+    h2 = NOCARDS
+    for c_str in split(hand, " ")
+        card = stringtocard(c_str)
+        #println(c_str, ": ", card)
+        h2 = add(h2, card)
+    end
+
+    last_atout = stringtocard(last_atout)
+    oppmove = stringtomove(oppmove)
+    @assert !(oppmove.card in h2)
+
+    remaining = remove(ALLCARDS, h2)
+    remaining = remove(remaining, last_atout)
+    remaining = remove(remaining, oppmove.card)
+
+    h1 = NOCARDS
+    if oppmove.card != last_atout # tauschen müssen und ausspielen -> nicht in der hand
+        h1 = add(h1, oppmove.card)
+    end
+
+    if oppmove.call
+        spouse = face(oppmove.card) == KING ? QUEEN : KING
+        spouse = Card(suit(oppmove.card), spouse)
+        @assert !(spouse in h2)
+        remaining = remove(remaining, spouse)
+        h1 = add(h1, spouse)
+    end
+    if oppmove.swap
+        atout_jack = Card(suit(last_atout), JACK)
+        @assert !(atout_jack in h2)
+        h1 = add(h1, atout_jack)
+        remaining = remove(remaining, atout_jack)
+    end
+
+    remaining = collect(remaining)
+    #println(remaining, "; ", length(remaining))
+
+    to_add = 5-length(h1)
+    #println("to_add ", to_add)
+    h1 = add(h1, reduce(|, remaining[1:to_add])) # just fill hand2s
+    #println("h1 ", h1, ", ", length(h1))
+
+    t = fill(NOCARD, 10)
+    t[2:10] = remaining[(to_add+1):end] # just fill talon
+    t[1] = last_atout
+
+    s = Schnapsen()
+    s.hand1 = h1
+    s.hand2 = h2
+    s.talon = t
+    s.atout = suit(s.talon[1])
+
+    @assert oppmove in get_moves(s)
+    make_move!(s, oppmove, Undo())
+
+    return s
+end
+
+# test cases
+
+# s = Schnapsen("KC 10C JS 10D 10H", "AS", "10C") # fail: card in my hand
+# s = Schnapsen("KC 10C JS 10D 10H", "AS", "10S") # ok
+# s = Schnapsen("KC 10C JS 10D 10H", "AS", "KH a") # ok: QH should be in hand
+# s = Schnapsen("KC 10C JS 10D 10H", "AS", "KH az") # ok
+# s = Schnapsen("KC 10C JS 10D 10H", "AS", "KH t") # fail: atoutjack in my hand
+# s = Schnapsen("KC 10C JH 10D 10H", "AS", "KH t") # ok
+# s = Schnapsen("KC 10C JH 10D 10H", "AS", "AS t") # ok
+# s = Schnapsen("KC 10C JH 10D 10H", "AS", "AS") # fail: atoutjack not swapped
+# s = Schnapsen("KC 10C JH 10D 10H", "AS", "AS tz") # ok
+# s = Schnapsen("KS 10C JH 10D 10H", "AS", "QS atz") # fail: spouse in my hand
+# s = Schnapsen("KS 10C JH 10D 10H", "AS", "QH atz") # ok
+
+
+
 include("moves.jl")

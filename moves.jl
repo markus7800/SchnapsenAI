@@ -489,7 +489,7 @@ end
 #     return move_value(s, a) < move_value(s, b)
 # end
 
-# 10S az
+# 10S azt
 function stringtomove(str::String)
     sts = Dict(
         'S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS,

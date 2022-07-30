@@ -3,50 +3,6 @@ include("game2.jl")
 @info "Benchmark Multithread:" Threads.nthreads()
 
 
-function Schnapsen(hand1::String, hand2::String, talon::String)
-    sts = Dict(
-        'S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS,
-        '♠'=>SPADES, '♡'=>HEARTS, '♢'=>DIAMONDS, '♣'=>CLUBS
-        )
-    fs = Dict("J"=>JACK, "Q"=>QUEEN, "K"=>KING, "10"=>TEN, "A"=>ACE)
-
-    function parse(str)
-        sgroups = split(str, " ")
-
-        f = sgroups[1][1:end-1]
-        st = sgroups[1][end]
-
-        card = Card(sts[st], fs[f])
-        return card
-    end
-
-    h1 = NOCARDS
-    for c_str in split(hand1, " ")
-        card = parse(c_str)
-        #println(c_str, ": ", card)
-        h1 = add(h1, card)
-    end
-
-    h2 = NOCARDS
-    for c_str in split(hand2, " ")
-        card = parse(c_str)
-        #println(c_str, ": ", card)
-        h2 = add(h2, card)
-    end
-
-    t = Vector{Card}()
-    for c_str in split(talon, " ")
-        card = parse(c_str)
-        # println(c_str, ": ", card)
-        push!(t, card)
-    end
-
-    s = Schnapsen()
-    s.hand1 = h1
-    s.hand2 = h2
-    s.talon = t
-    return s
-end
 
 s = Schnapsen("KC 10C JS 10D 10H", "QC AC 10S JD QD", "AS JH JC AD KH QS QH KS KD AH")
 g = Game(s)
