@@ -132,13 +132,15 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
     println(io, "Played: $(s.played_card)")
 
     print(io, "Talon: ")
-    print(io, s.talon[1], " | ")
+    if s.n_talon > 0
+        print(io, s.talon[1], " | ")
 
-    for card in s.talon[2:s.n_talon]
-        if perspective == 0
-            print(io, card, " ")
-        else
-            print(io, "??", " ")
+        for card in s.talon[2:s.n_talon]
+            if perspective == 0
+                print(io, card, " ")
+            else
+                print(io, "??", " ")
+            end
         end
     end
     println(io)

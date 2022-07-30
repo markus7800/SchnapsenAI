@@ -46,7 +46,7 @@ function play_move!(game::Game, m::Move)
     game.played_cards = add(game.played_cards, m.card)
     if m.call
         spouse = face(m.card) == KING ? QUEEN : KING
-        push!(game.calls, (Card(suit(m.card), spouse), m.player_to_move))
+        push!(game.calls, (Card(suit(m.card), spouse), game.s.player_to_move))
     end
 
     if m.swap

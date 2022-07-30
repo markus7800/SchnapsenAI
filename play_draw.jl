@@ -62,7 +62,8 @@ function play_move_draw_card!(game::Game, m::Move, c::Card=NOCARD)
     end
 
     game.last_atout = game.s.talon[1]
-    m
+
+    game.s
 end
 
 function opp_move_draw_card!(game::Game, m::Move, c::Card=NOCARD) # card c is not for opponent but for me
@@ -103,9 +104,12 @@ function opp_move_draw_card!(game::Game, m::Move, c::Card=NOCARD) # card c is no
         remaining = remove(remaining, atout_jack)
     end
 
-    remaining = add(remaining, c) # can be no card
-
     remaining = collect(remaining)
+    if c != NOCARD
+        @assert !(c in remaining)
+        push!(remaining, c) # card to talon
+    end
+
     println(remaining, "; ", length(remaining))
 
     to_add = length(opp_hand)-length(h)
@@ -113,9 +117,17 @@ function opp_move_draw_card!(game::Game, m::Move, c::Card=NOCARD) # card c is no
     h = add(h, reduce(|, remaining[1:to_add])) # just fill hand
     println("h ", h, ", ", length(h))
 
-    t = fill(NOCARD, 10)
+    t = fill(NOCARD, game.s.n_talon)
     t[2:game.s.n_talon] = remaining[(to_add+1):end] # just fill talon
     t[1] = game.last_atout
+    println("talon ", t, ", ", length(t))
+
+    if game.s.player_to_move == 1
+        game.s.hand1 = h
+    else
+        game.s.hand2 = h
+    end
+    s.talon = t
 
 
     # make game move
@@ -136,11 +148,11 @@ function opp_move_draw_card!(game::Game, m::Move, c::Card=NOCARD) # card c is no
 
     if c == NOCARD
         # keine karte aufnehmen, -> gegner spielt aus
-        @assert game.s.played_card != NOCARD
+        @assert game.s.played_card == NOCARD
         make_move!(game.s, m, Undo())
     else
         # karte aufnehmen -> gegner reagiert auf unsere karte
-        @assert game.s.played_card == NOCARD
+        @assert game.s.played_card != NOCARD
         u = Undo()
         make_move!(game.s, m, u)
 
@@ -171,5 +183,6 @@ function opp_move_draw_card!(game::Game, m::Move, c::Card=NOCARD) # card c is no
     end
 
     game.last_atout = game.s.talon[1]
-    m
+
+    game.s
 end

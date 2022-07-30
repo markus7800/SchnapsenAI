@@ -327,6 +327,7 @@ function make_move!(s::Schnapsen, move::Move, undo::Undo)
 
         # draw cards
         if !is_locked(s) && s.n_talon ≥ 2
+            # Die Person, die den Stich gewonnen hat, hebt daraufhin die oberste Karte des Talons ab
             c1 = s.talon[s.n_talon] # card for winner
             c2 = s.talon[s.n_talon-1] # card for loser
             s.n_talon -= 2
@@ -490,7 +491,7 @@ end
 # end
 
 # 10S azt
-function stringtomove(str::String)
+function stringtomove(str::AbstractString)
     sts = Dict(
         'S'=>SPADES, 'H'=>HEARTS, 'D'=>DIAMONDS, 'C'=>CLUBS,
         '♠'=>SPADES, '♡'=>HEARTS, '♢'=>DIAMONDS, '♣'=>CLUBS
