@@ -232,8 +232,8 @@ function game_from_str(s)
 
     remaining = remaining[n_opp_hand+1:end]
     println()
-    #println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
-    #println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
+    println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
+    println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
 
     talon = remaining
 

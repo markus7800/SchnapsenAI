@@ -161,7 +161,8 @@ function show_schnapsen(io::IO, s::Schnapsen, perspective=0)
         end
         println(io, ", $(s.trickscore1) (+ $(s.call1))")
     else
-        println(io, "* "^length(s.hand1))
+        print(io, "* "^length(s.hand1))
+        println(io, ", $(s.trickscore1) (+ $(s.call1))")
     end
 
     println(io, "Last trick: $(s.lasttrick)")
