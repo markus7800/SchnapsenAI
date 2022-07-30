@@ -75,13 +75,14 @@ function game_from_str(s)
                 end
 
                 spouse = face(m.card) == KING ? QUEEN : KING
+                spouse = Card(suit(m.card), spouse)
                 @assert !(spouse in played_cards)
                 if player == perspective
-                    @assert spouse in hs[perspective]
+                    @assert spouse in hs[perspective] "$spouse"
                 else
                     @assert !(spouse in hs[perspective])
                 end
-                push!(game.calls, (Card(suit(m.card), spouse), player))
+                push!(game.calls, (spouse, player))
             end
             if m.lock
                 game.s.lock = player
@@ -198,7 +199,7 @@ function game_from_str(s)
 
                 game.s.played_card = NOCARD
             end
-            
+
             println("player_hand: ", hs[perspective], ", played_cards: ", played_cards, ", last_atout: ", last_atout, ", player_to_move: ", player_to_move)
         end
 
