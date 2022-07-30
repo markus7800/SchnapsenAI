@@ -9,21 +9,22 @@ mutable struct Game
     calls::Vector{Tuple{Card,Int}}
     atout_swap::Card
     atout_swap_player::Int
+    perspective::Int
 end
 
-function Game(seed::Int)
+function Game(seed::Int, perspective::Int=0)
     s = Schnapsen(seed)
-    return Game(s)
+    return Game(s, perspective)
 end
 
-function Game(s::Schnapsen)
+function Game(s::Schnapsen, perspective::Int=0)
     played_cards = NOCARDS
-    return Game(s, played_cards, s.talon[1], [], NOCARD, 0)
+    return Game(s, played_cards, s.talon[1], [], NOCARD, 0, perspective)
 end
 
 function Base.show(io::IO, game::Game)
     println(io, "Schnapsen Game:")
-    show_schnapsen(io, game.s, game.s.player_to_move)
+    show_schnapsen(io, game.s, game.perspective)
     println(io, "\n", "-"^40)
     println(io, "Played cards: $(game.played_cards)")
     println(io, "last_atout $(game.last_atout)")
@@ -36,8 +37,8 @@ function Base.show(io::IO, game::Game)
 end
 
 import Base:stdout
-function print_game(game::Game, perspective=0)
-    Base.show(stdout, game.s, perspective)
+function print_game(game::Game)
+    Base.show(stdout, game.s)
 end
 
 function play_move!(game::Game, m::Move)
@@ -64,8 +65,8 @@ function play_move!(game::Game, m::String)
     play_move!(game, stringtomove(m))
 end
 
-include("play_draw.jl")
-s
+include("game_from_string.jl")
+
 function choose(cards::Cards, k::Int)::Vector{Cards}
     n = length(cards)
     if n == 0 && k > 0
@@ -113,18 +114,24 @@ end
 function eval_lock_moves(game::Game)
     candidate_cards, n_opponent_hand, cards_add = get_candidate_cards(game)
 
-    n_hands = binomial(length(candidate_cards), n_opponent_hand)
-    println(length(candidate_cards), " unseen cards + ", n_opponent_hand, " unkown opponent cards = ", n_hands, " possible opponent hands.")
-
     s = deepcopy(game.s)
     movelist = MoveList()
     get_moves!(movelist, s)
+    mask = [is_locked(s) || m.lock for m in movelist]
+    movelist = MoveList(movelist[mask])
+    if length(movelist) == 0
+        return movelist, Float64[]
+    end
+
+    n_hands = binomial(length(candidate_cards), n_opponent_hand)
+    println(length(candidate_cards), " unseen cards + ", n_opponent_hand, " unkown opponent cards = ", n_hands, " possible opponent hands.")
+
+
     u = Undo()
     ab = AlphaBeta(20)
     n_lost = zeros(Int, length(movelist))
 
     for (movenumber, move) in enumerate(movelist)
-        !is_locked(s) && !move.lock && continue
         for (i, opphand) in enumerate(choose(candidate_cards, n_opponent_hand))
             opphand = add(opphand, cards_add)
 
@@ -148,9 +155,7 @@ function eval_lock_moves(game::Game)
     end
     losing_prob = n_lost ./ n_hands
 
-    mask = [is_locked(s) || m.lock for m in movelist]
-    losing_prob = losing_prob[mask]
-    movelist = MoveList(movelist[mask])
+    losing_prob = losing_prob
 
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
@@ -188,6 +193,8 @@ function eval_moves_full(game::Game)
 
     movelist = MoveList()
     get_moves!(movelist, game.s)
+    mask = [!m.lock for m in movelist]
+    movelist = MoveList(movelist[mask])
 
     n_lost = zeros(Int, length(movelist), nthreads)
 
@@ -303,6 +310,8 @@ function eval_moves_prob(game::Game, n_iter::Int)
 
     movelist = MoveList()
     get_moves!(movelist, game.s)
+    mask = [!m.lock for m in movelist]
+    movelist = MoveList(movelist[mask])
 
     candidate_cards = collect(candidate_cards)
     sampled_cards_copies = [copy(candidate_cards) for _ in 1:nthreads]
@@ -337,7 +346,6 @@ function eval_moves_prob(game::Game, n_iter::Int)
 
         for movenumber in 1:length(movelist)
             move = movelist[movenumber]
-            move.lock && continue
 
             make_move!(s, move, u)
             score = go(ab, s)
@@ -354,12 +362,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
     end
 
     n_lost = vec(sum(n_lost, dims=2))
-    losing_prob = n_lost ./ n_iter # s/n
-
-    mask = [!m.lock for m in movelist]
-    n_lost = n_lost[mask]
-    losing_prob = losing_prob[mask]
-    movelist = MoveList(movelist[mask])
+    losing_prob = n_lost ./ n_iter
 
     min_losing_prob = minimum(losing_prob)
     for (movenumber, move) in enumerate(movelist)
@@ -385,10 +388,44 @@ function best_AB_move(game::Game)
     end
 
     for (movenumber, move) in enumerate(movelist)
-        move.lock && continue
         asterix = scores[movenumber] == best_score ? "*" : ""
         @printf("%6s: %7.1f %s\n", move, scores[movenumber], asterix)
     end
     println("Best score: $best_score; player to move $(s.player_to_move)")
     return movelist, scores
+end
+
+
+
+function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
+    lock_movelist, lock_losing_prob = eval_lock_moves(g)
+
+    if length(lock_movelist) > 0 && (
+            is_locked(game.s) ||
+            (minimum(lock_losing_prob) < lock_prob_threshold && length(game.played_cards) ≤ 4)
+        )
+        # risk early lock without looking at other moves, otherwise always full search
+        movelist, losing_prob = lock_movelist, lock_losing_prob
+    else
+        if length(game.played_cards) ≤ 2
+            @info "Evaluate 2_500 random games (< 0.01 deviation)."
+            movelist, losing_prob = eval_moves_prob(g, 2_500)
+        elseif length(game.played_cards) == 3
+            @info "Evaluate 10_000 random games (< 0.005 deviation)."
+            movelist, losing_prob = eval_moves_prob(g, 10_000)
+        else
+            @info "Evaluate full."
+            movelist, losing_prob = eval_moves_full(g)
+        end
+        movelist = vcat(vec(movelist), vec(lock_movelist))
+        losing_prob = vcat(losing_prob, lock_losing_prob)
+    end
+
+    amin = argmin(losing_prob)
+    move = movelist[amin]
+    prob = losing_prob[amin]
+
+    @info @sprintf("Best move: %s with losing probability %.4f", move, prob)
+
+    return move, prob
 end
