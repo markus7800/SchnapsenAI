@@ -32,7 +32,7 @@ region.save(f"cards/unkown_card.png")
 
 
 region = im.crop((167*3 + 167/2-size_x, 243*4+243/2-size_y-8, 167*3 + 167/2+size_x, 243*4+243/2+size_y-8))
-region.save(f"cards/nosuit.png")
+region.save(f"cards/no_suit.png")
 
 region = im.crop((167*3 + 2, 243*4 + 2, 167*4 + 2, 243*5 + 2))
-region.save(f"cards/nocard.png")
+region.save(f"cards/no_card.png")

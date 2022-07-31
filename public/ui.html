@@ -71,7 +71,7 @@ body {
   <div class="header1"><h3>Schnapsen Interface</h3></div>
   <div class="opponent2">
     <div class="handcard-container">
-      <div class="handcard-item"><h2>Score:<br>00</h2></div>
+      <div class="handcard-item"><h2 id="opponent_score">Score:<br>00</h2></div>
       <div class="opponent-item"><img id="opponent_hand_1" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_2" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_3" src="cards/unkown_card.png"></div>
@@ -83,15 +83,15 @@ body {
     <div class="handcard-container">
       <div class="handcard-item"><h2 style="visibility: hidden;">Score:<br>00</h2></div>
       <div class="played-card-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown_card.png"></div>
-      <div class="respond-card-item"><img id="play_area_2" src="cards/nocard.png"></div>
-      <div class="handcard-item"><img id="play_area_3" src="cards/nocard.png"></div>
+      <div class="respond-card-item"><img id="play_area_2" src="cards/no_card.png"></div>
+      <div class="handcard-item"><img id="no_card" src="cards/no_card.png"></div>
       <div class="lastatout-item"><img onclick="clickCard(this.id)" id="play_area_4" src="cards/unkown_card.png"></div>
       <div class="talon-item"><img onclick="clickCard(this.id)" id="play_area_5" src="cards/unkown_card.png"></div>
     </div>
   </div>
   <div class="player4">
     <div class="handcard-container">
-      <div class="handcard-item"><h2>Score:<br>00</h2></div>
+      <div class="handcard-item"><h2 id="player_score">Score:<br>00</h2></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown_card.png"></div>
@@ -324,38 +324,6 @@ body {
     return face_to_symbol[face] + suit_to_symbol[suit]
   }
 
-  function confirm() {
-    console.log("confirm")
-    deselectAll()
-
-    if (state == "newgame") {
-      hand = ""
-      elements = document.getElementsByClassName("player-item");
-      for (var i = 0; i < elements.length; i++) {
-        id = getIdFromSrcName(elements[i].firstChild.src)
-        hand += symbolFromId(id)
-        if (i < 4) { hand += " " }
-      }
-      console.log("hand", hand)
-
-      srcname = document.getElementById("play_area_4").src
-      atout = symbolFromId(getIdFromSrcName(srcname))
-
-      srcname = document.getElementById("play_area_1").src
-      oppmove = symbolFromId(getIdFromSrcName(srcname))
-    
-      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": oppmove}, function(response) {
-        r = JSON.parse(response)
-        console.log(r)
-      });
-    }
-
-    // make backend call
-    //mymove()
-    //oppmove()
-    //drawcard()
-  }
-
   function hideCard(card_id) {
     card_image = document.getElementById(card_id);
     if (card_image != null) {
@@ -374,6 +342,24 @@ body {
       } else {
         console.log("Card", card_id, "not found.")
       }
+  }
+
+  function showGameCard(card_id) {
+    card_image = document.getElementById(card_id);
+    if (card_image != null) {
+      card_image.style.visibility = "visible"
+    } else {
+      console.log("Card", card_id, "not found.")
+    }
+  }
+
+  function hideGameCard(card_id) {
+    card_image = document.getElementById(card_id);
+    if (card_image != null) {
+      card_image.style.visibility = "hidden"
+    } else {
+      console.log("Card", card_id, "not found.")
+    }
   }
 
   function getIdFromSrcName(srcName) {
@@ -482,7 +468,105 @@ body {
 
     footer = document.getElementById("footer")
     footer.innerHTML = "Select drawn card."
+  }
 
+  function gameover() {
+    console.log("gameover")
+
+    state = "gameover"
+    disableClick(allClassNames)
+    footer = document.getElementById("footer")
+    footer.innerHTML = "Game over."
+  }
+
+  function setCard(card_id, card_name) {
+    card_image = document.getElementById(card_id);
+    card_image.src = document.getElementById(card_name).src
+  }
+
+  function setupGameFromJson(gamejson) {
+    for (var i = 1; i <= 5; i++) {
+      if (i <= gamejson.n_opphand) {
+        showGameCard("opponent_hand_" + i)
+      } else {
+        hideGameCard("opponent_hand_" + i)
+      }
+      if (i <= gamejson.hand.length) {
+        showGameCard("player_hand_" + i)
+        setCard("player_hand_" + i, gamejson.hand[i-1])
+      } else {
+        hideGameCard("player_hand_" + i)
+      }
+    }
+
+    setCard("play_area_1", gamejson.played_card)
+    if (gamejson.is_locked) {
+      setCard("play_area_4", "no_card")
+      setCard("play_area_5", gamejson.last_atout)
+    } else {
+      setCard("play_area_4", gamejson.last_atout)
+    }
+
+    if (gamejson.n_talon == 0) {
+      setCard("play_area_4", "no_card")
+      setCard("play_area_5", "no_card")
+    }
+
+    elements = document.getElementsByClassName("remainingcard-item");
+    for (var i = 0; i < elements.length; i++) {
+      hideCard(elements[i].firstChild.id)
+    }
+    for (var i = 0; i < gamejson.remaining_cards.length; i++) {
+      showCard(gamejson.remaining_cards[i])
+    }
+
+    document.getElementsByClassName("opponent_score").innerHTML = "Score:<br>" + gamejson.opponent_score
+    document.getElementsByClassName("player_score").innerHTML = "Score:<br>" + gamejson.player_score
+  }
+
+  function confirm() {
+    console.log("confirm")
+    deselectAll()
+
+    if (state == "newgame") {
+      hand = ""
+      elements = document.getElementsByClassName("player-item");
+      for (var i = 0; i < elements.length; i++) {
+        id = getIdFromSrcName(elements[i].firstChild.src)
+        hand += symbolFromId(id)
+        if (i < 4) { hand += " " }
+      }
+      console.log("hand", hand)
+
+      srcname = document.getElementById("play_area_4").src
+      atout = symbolFromId(getIdFromSrcName(srcname))
+
+      srcname = document.getElementById("play_area_1").src
+      oppmove = symbolFromId(getIdFromSrcName(srcname))
+
+      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": oppmove}, function(response) {
+        r = JSON.parse(response)
+        if (r.ok) {
+          setupGameFromJson(r.game)
+
+          if (r.game.is_gameover) {
+            gameover()
+          } else {
+            if (r.game.player_to_move == "me") {
+              mymove()
+            } else {
+              oppmove()
+            }
+          }
+        }
+        console.log(r)
+      });
+    }
+
+    // make backend call
+    //mymove()
+    //oppmove()
+    //drawcard()
   }
 
   newgame()
