@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.header1 { grid-area: header; }
+.opponent2 { grid-area: opponent; }
+.playarea3 { grid-area: playarea; }
+.player4 { grid-area: player; }
+.remainingcard5 { grid-area: remainingcards; }
+.footer6 { grid-area: footer; }
+.buttons6 { grid-area: buttons; }
+
+.grid-container {
+  display: grid;
+  grid-template-areas:
+    'header header header'
+    'opponent opponent remainingcards'
+    'playarea playarea remainingcards'
+    'player player remainingcards'
+    'footer footer buttons';
+  gap: 10px;
+  background-color: #2196F3;
+  padding: 0px;
+}
+
+.grid-container > div {
+  background-color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  padding: 0px 0;
+  font-size: 30px;
+}
+
+
+.card-container {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  background-color: #2196F3;
+  padding: 0px;
+}
+
+.handcard-container {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto auto;
+  background-color: #2196F3;
+  padding: 0px;
+}
+
+.handcard-item {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 5px;
+  font-size: 10px;
+  text-align: center;
+}
+
+.remainingcard-item {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 5px;
+  font-size: 10px;
+  text-align: center;
+}
+
+img {
+  width: 100%;
+}
+
+</style>
+</head>
+<body>
+
+<div class="grid-container">
+  <div class="header1">Header</div>
+  <div class="opponent2">
+    <div class="handcard-container">
+      <div class="handcard-item"><h3>Score:<br>00</h3></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+    </div>
+  </div>
+  <div class="playarea3">
+    <div class="handcard-container">
+      <div class="handcard-item"><h3 style="visibility: hidden;">Score:<br>00</h3></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/nocard.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+    </div>
+  </div>
+  <div class="player4">
+    <div class="handcard-container">
+      <div class="handcard-item"><h3>Score:<br>00</h3></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img src="cards/unkown.png"></div>
+    </div>
+  </div>
+  <div class="remainingcard5">
+    <div class="card-container">
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+
+      <div class="remainingcard-item"><img src="cards/clubs.png"></div>
+      <div class="remainingcard-item"><img src="cards/hearts.png"></div>
+      <div class="remainingcard-item"><img src="cards/spades.png"></div>
+      <div class="remainingcard-item"><img src="cards/diamonds.png"></div>
+      <div class="remainingcard-item"><img src="cards/nosuit.png"></div>
+
+    </div>
+    <button type="button" name="confirm">Confirm Move</button>
+  </div>
+  <div class="footer6">Footer</div>
+  <div class="footer7">Buttons</div>
+</div>
+
+<script type="text/javascript">
+  console.log("hello")
+</script>
+
+</body>
+</html>
