@@ -26,7 +26,7 @@
 .grid-container > div {
   text-align: center;
   padding: 0px 0;
-  font-size: 30px;
+  font-size: 20px;
 }
 
 
@@ -42,7 +42,7 @@
   padding: 0px;
 }
 
-.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item {
+.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item, .played-card-item {
   padding: 5px;
   font-size: 10px;
   text-align: center;
@@ -71,31 +71,31 @@ body {
   <div class="opponent2">
     <div class="handcard-container">
       <div class="handcard-item"><h3>Score:<br>00</h3></div>
-      <div class="opponent-item"><img id="opponent_hand_1" src="cards/unkown.png"></div>
-      <div class="opponent-item"><img id="opponent_hand_2" src="cards/unkown.png"></div>
-      <div class="opponent-item"><img id="opponent_hand_3" src="cards/unkown.png"></div>
-      <div class="opponent-item"><img id="opponent_hand_4" src="cards/unkown.png"></div>
-      <div class="opponent-item"><img id="opponent_hand_5" src="cards/unkown.png"></div>
+      <div class="opponent-item"><img id="opponent_hand_1" src="cards/unkown_card.png"></div>
+      <div class="opponent-item"><img id="opponent_hand_2" src="cards/unkown_card.png"></div>
+      <div class="opponent-item"><img id="opponent_hand_3" src="cards/unkown_card.png"></div>
+      <div class="opponent-item"><img id="opponent_hand_4" src="cards/unkown_card.png"></div>
+      <div class="opponent-item"><img id="opponent_hand_5" src="cards/unkown_card.png"></div>
     </div>
   </div>
   <div class="playarea3">
     <div class="handcard-container">
       <div class="handcard-item"><h3 style="visibility: hidden;">Score:<br>00</h3></div>
-      <div class="handcard-item"><img id="play_area_1" src="cards/unkown.png"></div>
-      <div class="handcard-item"><img id="play_area_2" src="cards/unkown.png"></div>
+      <div class="played-card-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown_card.png"></div>
+      <div class="handcard-item"><img id="play_area_2" src="cards/nocard.png"></div>
       <div class="handcard-item"><img id="play_area_3" src="cards/nocard.png"></div>
-      <div class="lastatout-item"><img onclick="clickCard(this.id)" id="play_area_4" src="cards/unkown.png"></div>
-      <div class="talon-item"><img onclick="clickCard(this.id)" id="play_area_5" src="cards/unkown.png"></div>
+      <div class="lastatout-item"><img onclick="clickCard(this.id)" id="play_area_4" src="cards/unkown_card.png"></div>
+      <div class="talon-item"><img onclick="clickCard(this.id)" id="play_area_5" src="cards/unkown_card.png"></div>
     </div>
   </div>
   <div class="player4">
     <div class="handcard-container">
       <div class="handcard-item"><h3>Score:<br>00</h3></div>
-      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown.png"></div>
-      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown.png"></div>
-      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown.png"></div>
-      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_4" src="cards/unkown.png"></div>
-      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_5" src="cards/unkown.png"></div>
+      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown_card.png"></div>
+      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown_card.png"></div>
+      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown_card.png"></div>
+      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_4" src="cards/unkown_card.png"></div>
+      <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_5" src="cards/unkown_card.png"></div>
     </div>
   </div>
   <div class="remainingcard5">
@@ -128,101 +128,223 @@ body {
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_hearts" src="cards/hearts.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_spades" src="cards/spades.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_diamonds" src="cards/diamonds.png"></div>
-      <div class="suit-item"><img onclick="clickCard(this.id)" src="cards/nosuit.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="unkown_card" src="cards/unkown_card.png"></div>
 
     </div>
+    <button type="button" name="engine">Run Engine</button>
     <button type="button" name="confirm" onclick="confirm()">Confirm</button>
   </div>
-  <div class="footer6">Footer</div>
+  <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
-    <button type="button" name="yes">Yes</button>
-    <button type="button" name="no">No</button>
-    <button type="button" name="next">Next</button>
-    <button type="button" name="engine">Run Engine</button>
+    <button type="button" name="new">New Game</button>
   </div>
 </div>
 
 <script type="text/javascript">
-  console.log("hello")
+  const selectionColor = "#00ff00"
+
 
   var state = "newgame"
 
   var player_selection = ""
-  var remaining_selection = ""
+  var card_selection = ""
+  var played_card_selection = ""
   var suit_selection = ""
   var lastatout_selected = false
   var talon_selected = false
 
-  function selectCard(id) {
+  function toggleSelectCard(card_id, color) {
+    id = card_id
     card_image = document.getElementById(id);
     parentDiv = card_image.parentElement;
 
-    elements = document.getElementsByClassName(parentDiv.className);
-    for (var i = 0; i < elements.length; i++) {
-      if (!elements[i].contains(card_image)) {
-        elements[i].style.backgroundColor = "";
+    if (state == "newgame") {
+      classGroup = ["played-card-item", "lastatout-item", "player-item"]
+      if (classGroup.some(el => el == parentDiv.className)) {
+        deselect(classGroup, card_image)
+      } else {
+        deselect([parentDiv.className], card_image)
       }
+    } else {
+      deselect([parentDiv.className], card_image)
     }
+
     if (parentDiv.style.backgroundColor != "") {
       // deselect
-      switch(parentDiv.className) {
-        case "player-item":
-          player_selection = ""; break;
-        case "remainingcard-item":
-          remaining_selection = ""; break;
-        case "lastatout-item":
-          lastatout_selected = false; break;
-        case "talon-item":
-          talon_selected = false; break;
-        case "suit-item":
-          suit_selection = ""; break;
-        default:
-          console.log("Invalid card class.", parentDiv.className); break;
-      }
-
+      deselectClass(parentDiv.className)
       parentDiv.style.backgroundColor = ""
+      console.log("Deselect", player_selection, card_selection, played_card_selection, lastatout_selected, talon_selected, suit_selection)
+
     } else {
       // select
-      switch(parentDiv.className) {
-        case "player-item":
-          player_selection = id; break;
-        case "remainingcard-item":
-          remaining_selection = id; break;
-        case "lastatout-item":
-          lastatout_selected = true; break;
-        case "talon-item":
-          talon_selected = true; break;
-        case "suit-item":
-          suit_selection = id; break;
-        default:
-          console.log("Invalid card class.", parentDiv.className); break;
-      }
-
-      parentDiv.style.backgroundColor = "#00ff00"
+      selectClass(parentDiv.className)
+      parentDiv.style.backgroundColor = color
+      console.log("Select", player_selection, card_selection, played_card_selection, lastatout_selected, talon_selected, suit_selection)
     }
-
-    console.log(player_selection, remaining_selection, lastatout_selected, talon_selected, suit_selection)
   }
 
-  function deselectAll() {
-    classNames = ["player-item", "remainingcard-item", "lastatout-item", "talon-item", "suit-item"]
+  function deselectClass(className) {
+    switch(className) {
+      case "player-item":
+        player_selection = ""; break;
+      case "remainingcard-item":
+        card_selection = ""; break;
+      case "played-card-item":
+        played_card_selection = ""; break;
+      case "lastatout-item":
+        lastatout_selected = false; break;
+      case "talon-item":
+        talon_selected = false; break;
+      case "suit-item":
+        suit_selection = ""; break;
+      default:
+        console.log("Invalid card class.", parentDiv.className); break;
+    }
+  }
+
+  function selectClass(className) {
+    switch(className) {
+      case "player-item":
+        player_selection = id; break;
+      case "remainingcard-item":
+        card_selection = id; break;
+      case "played-card-item":
+        played_card_selection = id; break;
+      case "lastatout-item":
+        lastatout_selected = true; break;
+      case "talon-item":
+        talon_selected = true; break;
+      case "suit-item":
+        suit_selection = id; break;
+      default:
+        console.log("Invalid card class.", parentDiv.className); break;
+    }
+  }
+
+  function deselect(classNames, except) {
+    for (const className of classNames) {
+      deselectClass(className)
+      elements = document.getElementsByClassName(className);
+      for (var i = 0; i < elements.length; i++) {
+        if (!elements[i].contains(except)) {
+          elements[i].style.backgroundColor = "";
+        }
+      }
+    }
+  }
+
+  function disableClick(classNames) {
     for (const className of classNames) {
       elements = document.getElementsByClassName(className);
       for (var i = 0; i < elements.length; i++) {
-        elements[i].style.backgroundColor = "";
+        elements[i].firstChild.onclick = false;
       }
     }
+  }
+
+  function enableClick(classNames) {
+    for (const className of classNames) {
+      elements = document.getElementsByClassName(className);
+      for (var i = 0; i < elements.length; i++) {
+        elements[i].firstChild.onclick = function() { clickCard(this.id) };
+      }
+    }
+  }
+
+  const allClassNames = ["player-item", "remainingcard-item", "lastatout-item", "talon-item", "suit-item", "played-card-item"]
+  function deselectAll() {
+    deselect(allClassNames)
   }
 
   function clickCard(id) {
     console.log("click", id);
-    selectCard(id)
+    toggleSelectCard(id, selectionColor)
+    selectionHandler()
   }
 
   function confirm() {
     console.log("confirm")
     deselectAll()
   }
+
+  function hideCard(card_id) {
+    card_image = document.getElementById(card_id);
+    if (card_image != null) {
+      card_image.style.opacity = 0.1
+      card_image.onclick = false
+    } else {
+      console.log("Card", card_id, "not found.")
+    }
+  }
+
+  function showCard(card_id) {
+      card_image = document.getElementById(card_id);
+      if (card_image != null) {
+        card_image.style.opacity = 1.0
+        card_image.onclick = function() { clickCard(this.id) }
+        console.log(card_image)
+      } else {
+        console.log("Card", card_id, "not found.")
+      }
+  }
+
+  function getIdFromSrcName(srcName) {
+    //"card/suit_face.png"
+    fileName = srcName.split("cards")[1]
+    id = fileName.slice(1, fileName.length-4)
+    return id
+  }
+
+  function selectionHandler() {
+    console.log("selectionHandler", card_selection, player_selection, lastatout_selected, played_card_selection)
+    if (state == "newgame") {
+      if (card_selection != "") {
+        var other_selection = ""
+        if (player_selection != "") {
+          other_selection = player_selection
+        } else if (lastatout_selected) {
+          other_selection = "play_area_4"
+        } else if (played_card_selection) {
+          other_selection = "play_area_1"
+        }
+        if (other_selection != "") {
+          if (card_selection != "unkown_card") {
+            hideCard(card_selection)
+          }
+
+          other_card_image = document.getElementById(other_selection)
+          card_selection_image = document.getElementById(card_selection)
+
+          showCard(getIdFromSrcName(other_card_image.src))
+          other_card_image.src = card_selection_image.src
+
+
+          toggleSelectCard(other_selection)
+          toggleSelectCard(card_selection)
+
+          if (other_selection.includes("player_hand")) {
+            i = parseInt(other_selection.split("player_hand_")[1])
+            if (i < 5) {
+              toggleSelectCard("player_hand_" + (i+1), selectionColor)
+            } else {
+              toggleSelectCard("play_area_4")
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function newgame() {
+    disableClick(allClassNames)
+    enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item"])
+
+    footer = document.getElementById("footer")
+    footer.innerHTML = "Input your hand, atout card, and first opponent move if necessary."
+    toggleSelectCard("player_hand_1", selectionColor)
+  }
+
+  newgame()
 </script>
 
 </body>

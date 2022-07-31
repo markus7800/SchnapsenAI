@@ -18,8 +18,9 @@ faces = [
 ]
 
 for suit, y in suits:
-    size = 40
-    region = im.crop((167/2-size, y+243/2-size-8, 167/2+size, y+243/2+size-8))
+    size_x = 40
+    size_y = 243/167 * size_x
+    region = im.crop((167/2-size_x, y+243/2-size_y-8, 167/2+size_x, y+243/2+size_y-8))
     region.save(f"cards/{suit}.png")
 
     for face, x in faces:
@@ -27,10 +28,10 @@ for suit, y in suits:
         region.save(f"cards/{suit}_{face}.png")
 
 region = im.crop((167*2 + 1, 243*4, 167*3 + 1, 243*5))
-region.save(f"cards/unkown.png")
+region.save(f"cards/unkown_card.png")
 
 
-region = im.crop((167*3 + 167/2-size, 243*4+243/2-size-8, 167*3 + 167/2+size, 243*4+243/2+size-8))
+region = im.crop((167*3 + 167/2-size_x, 243*4+243/2-size_y-8, 167*3 + 167/2+size_x, 243*4+243/2+size_y-8))
 region.save(f"cards/nosuit.png")
 
 region = im.crop((167*3 + 2, 243*4 + 2, 167*4 + 2, 243*5 + 2))
