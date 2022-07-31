@@ -71,7 +71,7 @@ body {
   <div class="header1"><h3>Schnapsen Interface</h3></div>
   <div class="opponent2">
     <div class="handcard-container">
-      <div class="handcard-item"><h2 id="opponent_score">Score:<br>00</h2></div>
+      <div class="handcard-item"><h2 id="opponent_score">Score:<br>0</h2></div>
       <div class="opponent-item"><img id="opponent_hand_1" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_2" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_3" src="cards/unkown_card.png"></div>
@@ -81,7 +81,7 @@ body {
   </div>
   <div class="playarea3">
     <div class="handcard-container">
-      <div class="handcard-item"><h2 style="visibility: hidden;">Score:<br>00</h2></div>
+      <div class="handcard-item"><h2 style="visibility: hidden;">Score:<br>0</h2></div>
       <div class="played-card-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown_card.png"></div>
       <div class="respond-card-item"><img id="play_area_2" src="cards/no_card.png"></div>
       <div class="handcard-item"><img id="no_card" src="cards/no_card.png"></div>
@@ -91,7 +91,7 @@ body {
   </div>
   <div class="player4">
     <div class="handcard-container">
-      <div class="handcard-item"><h2 id="player_score">Score:<br>00</h2></div>
+      <div class="handcard-item"><h2 id="player_score">Score:<br>0</h2></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown_card.png"></div>
@@ -125,14 +125,14 @@ body {
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_king" src="cards/diamonds_king.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ace" src="cards/diamonds_ace.png"></div>
 
-      <div class="suit-item"><img onclick="clickCard(this.id)" id="call_club" src="cards/clubs.png"></div>
+      <div class="suit-item"><img onclick="clickCard(this.id)" id="call_clubs" src="cards/clubs.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_hearts" src="cards/hearts.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_spades" src="cards/spades.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_diamonds" src="cards/diamonds.png"></div>
       <div class="unkowncard-item"><img onclick="clickCard(this.id)" id="unkown_card" src="cards/unkown_card.png"></div>
 
     </div>
-    <button type="button" name="engine">Run Engine</button>
+    <button type="button" name="engine" onclick="engine()">Run Engine</button>
     <button type="button" name="confirm" onclick="confirm()">Confirm</button>
   </div>
   <div class="footer6" id="footer">Footer</div>
@@ -161,16 +161,18 @@ body {
     card_image = document.getElementById(id);
     parentDiv = card_image.parentElement;
 
+    classGroup = [parentDiv.className]
     if (state == "newgame") {
       classGroup = ["played-card-item", "lastatout-item", "player-item"]
-      if (classGroup.some(el => el == parentDiv.className)) {
-        deselect(classGroup, card_image)
-      } else {
-        deselect([parentDiv.className], card_image)
-      }
+    } else if (state == "mymove") {
+    }
+
+    if (classGroup.some(el => el == parentDiv.className)) {
+      deselect(classGroup, card_image)
     } else {
       deselect([parentDiv.className], card_image)
     }
+
 
     if (parentDiv.style.backgroundColor != "") {
       // deselect
@@ -362,6 +364,11 @@ body {
     }
   }
 
+  function isGameCardHidden(card_id) {
+    card_image = document.getElementById(card_id);
+    return card_image.style.visibility == "hidden"
+  }
+
   function getIdFromSrcName(srcName) {
     //"card/suit_face.png"
     fileName = srcName.split("cards")[1]
@@ -370,8 +377,9 @@ body {
   }
 
   function selectionHandler() {
-    console.log("selectionHandler", card_selection, player_selection, lastatout_selected, played_card_selection)
     if (state == "newgame") {
+      console.log("selectionHandler", state, card_selection, player_selection, lastatout_selected, played_card_selection)
+
       if (card_selection != "") {
         var other_selection = ""
         if (player_selection != "") {
@@ -391,7 +399,6 @@ body {
 
           showCard(getIdFromSrcName(other_card_image.src))
           other_card_image.src = card_selection_image.src
-
 
           toggleSelectCard(other_selection)
           toggleSelectCard(card_selection)
@@ -413,26 +420,10 @@ body {
     console.log("newgame")
     state = "newgame"
 
-    /*deselectAll()
-
-    elements = document.getElementsByClassName("remainingcard-item");
-    for (var i = 0; i < elements.length; i++) {
-      showCard(elements[i].firstChild.id)
-    }
-
-    unkown_card = document.getElementById("unkown_card")
-    for (const className of ["played-card-item", "lastatout-item", "player-item"]) {
-      elements = document.getElementsByClassName(className);
-      for (var i = 0; i < elements.length; i++) {
-        elements[i].firstChild.src = unkown_card.src
-      }
-    }*/
-
     disableClick(allClassNames)
     enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item", "unkowncard-item"])
 
-    footer = document.getElementById("footer")
-    footer.innerHTML = "Input your hand, atout card, and first opponent move if necessary."
+    setFooterMsg("Input your hand, atout card, and first opponent move if necessary.")
     toggleSelectCard("player_hand_1", selectionColor)
   }
 
@@ -443,8 +434,7 @@ body {
     disableClick(allClassNames)
     enableClick(["lastatout-item", "player-item", "suit-item", "talon-item"])
 
-    footer = document.getElementById("footer")
-    footer.innerHTML = "Input your move.  Click talon for lock, atout for swap, suit for call, your hand for played card. Click 'Run Engine' for best move."
+    setFooterMsg("Input your move.  Click talon for lock, atout for swap, suit for call, your hand for played card. Click 'Run Engine' for best move.")
   }
 
   function oppmove() {
@@ -454,9 +444,7 @@ body {
     disableClick(allClassNames)
     enableClick(["lastatout-item", "remainingcard-item", "suit-item", "talon-item"])
 
-    footer = document.getElementById("footer")
-    footer.innerHTML = "Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card."
-
+    setFooterMsg("Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card.")
   }
 
   function drawcard() {
@@ -466,8 +454,12 @@ body {
     disableClick(allClassNames)
     enableClick(["remainingcard-item"])
 
-    footer = document.getElementById("footer")
-    footer.innerHTML = "Select drawn card."
+    setFooterMsg("Select drawn card.")
+  }
+
+  function setFooterMsg(msg) {
+      footer = document.getElementById("footer")
+      footer.innerHTML = msg
   }
 
   function gameover() {
@@ -475,8 +467,7 @@ body {
 
     state = "gameover"
     disableClick(allClassNames)
-    footer = document.getElementById("footer")
-    footer.innerHTML = "Game over."
+    setFooterMsg("Game over.")
   }
 
   function setCard(card_id, card_name) {
@@ -520,8 +511,55 @@ body {
       showCard(gamejson.remaining_cards[i])
     }
 
-    document.getElementsByClassName("opponent_score").innerHTML = "Score:<br>" + gamejson.opponent_score
-    document.getElementsByClassName("player_score").innerHTML = "Score:<br>" + gamejson.player_score
+    document.getElementById("opponent_score").innerHTML = "Score:<br>" + gamejson.opponent_score
+    document.getElementById("player_score").innerHTML = "Score:<br>" + gamejson.player_score
+
+    if (gamejson.is_gameover) {
+      gameover()
+    } else {
+      if (gamejson.player_to_move == "me") {
+        mymove()
+      } else {
+        oppmove()
+      }
+    }
+  }
+
+  function engine() {
+    deselectAll()
+
+    if (state != "mymove") { return }
+    setFooterMsg("...")
+
+    $.get("/engine", function(response) {
+      r = JSON.parse(response)
+      console.log(r)
+      if (r.ok) {
+        for (var i=1; i <= 5; i++) {
+          card_img = document.getElementById("player_hand_" + i)
+          if (card_img.src.includes(r.card) && !isGameCardHidden(card_img.id)) {
+            toggleSelectCard(card_img.id, selectionColor)
+          }
+        }
+        if (r.lock) {
+          toggleSelectCard("play_area_5", )
+        }
+        if (r.swap) {
+          toggleSelectCard("play_area_4", selectionColor)
+        }
+        if (r.call) {
+          if (r.card.includes("clubs")) {
+            toggleSelectCard("call_clubs", selectionColor)
+          } else if (r.card.includes("hearts")) {
+            toggleSelectCard("call_hearts", selectionColor)
+          } else if (r.card.includes("spades")) {
+            toggleSelectCard("call_spades", selectionColor)
+          } else if (r.card.includes("diamonds")) {
+            toggleSelectCard("call_diamonds", selectionColor)
+          }
+        }
+      }
+    })
   }
 
   function confirm() {
@@ -544,22 +582,13 @@ body {
       srcname = document.getElementById("play_area_1").src
       oppmove = symbolFromId(getIdFromSrcName(srcname))
 
+      setFooterMsg("...")
       $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": oppmove}, function(response) {
         r = JSON.parse(response)
+        console.log(r)
         if (r.ok) {
           setupGameFromJson(r.game)
-
-          if (r.game.is_gameover) {
-            gameover()
-          } else {
-            if (r.game.player_to_move == "me") {
-              mymove()
-            } else {
-              oppmove()
-            }
-          }
         }
-        console.log(r)
       });
     }
 

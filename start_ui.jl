@@ -9,6 +9,7 @@ include("game2.jl")
 
 game_string = ""
 incomplete_trick = ""
+game = Game(0)
 
 const suit_names = Dict{Cards, String}(
     CLUBS => "clubs",
@@ -64,6 +65,7 @@ end
 route("/newgame") do
     global game_string
     global incomplete_trick
+    global game
 
     hand = params(:hand)
     lastatout = params(:atout)
@@ -94,6 +96,40 @@ route("/newgame") do
             "error" => sprint(show, e)
         )))
     end
+end
+
+route("/engine") do
+    global game
+    @info "/engine"
+    println(game)
+    println(game.s)
+
+    if game.perspective != game.s.player_to_move
+        return respond(json(Dict(
+            "ok" => false,
+            "error" => "Not your move."
+        )))
+    end
+    
+    # return respond(json(Dict(
+    #     "ok" => true,
+    #     "card" => "hearts_ten",
+    #     "lock" => true,
+    #     "call" => true,
+    #     "swap" => true,
+    #     "losing_probability" => 0.6
+    # )))
+
+    move, prob = get_best_move(game)
+
+    return respond(json(Dict(
+        "ok" => true,
+        "card" => card_to_name(move.card),
+        "lock" => move.lock,
+        "call" => move.call,
+        "swap" => move.swap,
+        "losing_probability" => prob
+    )))
 end
 
 @info "Start listening at localhost:8000"

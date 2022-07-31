@@ -33,7 +33,9 @@ function Base.show(io::IO, game::Game)
         print(io, call[1], "($(call[2]))")
     end
     println(io)
-    println(io, "atout_swap $(game.atout_swap) ($(game.atout_swap_player))")
+    println(io, "Atout swap: $(game.atout_swap) ($(game.atout_swap_player))")
+    println(io, "Perspective: $(game.perspective)")
+    println(io, "\n", "-"^40)
 end
 
 import Base:stdout
@@ -398,7 +400,7 @@ end
 
 
 function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
-    lock_movelist, lock_losing_prob = eval_lock_moves(g)
+    lock_movelist, lock_losing_prob = eval_lock_moves(game)
 
     if length(lock_movelist) > 0 && (
             is_locked(game.s) ||
@@ -409,13 +411,13 @@ function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
     else
         if length(game.played_cards) ≤ 2
             @info "Evaluate 2_500 random games (< 0.01 deviation)."
-            movelist, losing_prob = eval_moves_prob(g, 2_500)
+            movelist, losing_prob = eval_moves_prob(game, 2_500)
         elseif length(game.played_cards) == 3
             @info "Evaluate 10_000 random games (< 0.005 deviation)."
-            movelist, losing_prob = eval_moves_prob(g, 10_000)
+            movelist, losing_prob = eval_moves_prob(game, 10_000)
         else
             @info "Evaluate full."
-            movelist, losing_prob = eval_moves_full(g)
+            movelist, losing_prob = eval_moves_full(game)
         end
         movelist = vcat(vec(movelist), vec(lock_movelist))
         losing_prob = vcat(losing_prob, lock_losing_prob)
