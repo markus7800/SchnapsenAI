@@ -136,7 +136,7 @@ body {
   </div>
   <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
-    <button type="button" name="new">New Game</button>
+    <button type="button" name="new" onclick="newgame()">New Game</button>
   </div>
 </div>
 
@@ -282,7 +282,6 @@ body {
       if (card_image != null) {
         card_image.style.opacity = 1.0
         card_image.onclick = function() { clickCard(this.id) }
-        console.log(card_image)
       } else {
         console.log("Card", card_id, "not found.")
       }
@@ -336,6 +335,23 @@ body {
   }
 
   function newgame() {
+    state = "newgame"
+
+    deselectAll()
+
+    elements = document.getElementsByClassName("remainingcard-item");
+    for (var i = 0; i < elements.length; i++) {
+      showCard(elements[i].firstChild.id)
+    }
+
+    unkown_card = document.getElementById("unkown_card")
+    for (const className of ["played-card-item", "lastatout-item", "player-item"]) {
+      elements = document.getElementsByClassName(className);
+      for (var i = 0; i < elements.length; i++) {
+        elements[i].firstChild.src = unkown_card.src
+      }
+    }
+
     disableClick(allClassNames)
     enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item"])
 
@@ -345,6 +361,7 @@ body {
   }
 
   newgame()
+
 </script>
 
 </body>
