@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <style>
 .header1 { grid-area: header; }
 .opponent2 { grid-area: opponent; }
@@ -70,7 +71,7 @@ body {
   <div class="header1"><h3>Schnapsen Interface</h3></div>
   <div class="opponent2">
     <div class="handcard-container">
-      <div class="handcard-item"><h3>Score:<br>00</h3></div>
+      <div class="handcard-item"><h2>Score:<br>00</h2></div>
       <div class="opponent-item"><img id="opponent_hand_1" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_2" src="cards/unkown_card.png"></div>
       <div class="opponent-item"><img id="opponent_hand_3" src="cards/unkown_card.png"></div>
@@ -80,7 +81,7 @@ body {
   </div>
   <div class="playarea3">
     <div class="handcard-container">
-      <div class="handcard-item"><h3 style="visibility: hidden;">Score:<br>00</h3></div>
+      <div class="handcard-item"><h2 style="visibility: hidden;">Score:<br>00</h2></div>
       <div class="played-card-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown_card.png"></div>
       <div class="respond-card-item"><img id="play_area_2" src="cards/nocard.png"></div>
       <div class="handcard-item"><img id="play_area_3" src="cards/nocard.png"></div>
@@ -90,7 +91,7 @@ body {
   </div>
   <div class="player4">
     <div class="handcard-container">
-      <div class="handcard-item"><h3>Score:<br>00</h3></div>
+      <div class="handcard-item"><h2>Score:<br>00</h2></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown_card.png"></div>
       <div class="player-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown_card.png"></div>
@@ -136,7 +137,7 @@ body {
   </div>
   <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
-    <button type="button" name="new" onclick="location.reload()">New Game</button>
+    <!-- <button type="button" name="new" onclick="location.reload()">New Game</button> -->
   </div>
 </div>
 
@@ -298,14 +299,61 @@ body {
     selectionHandler()
   }
 
+  const suit_to_symbol = {
+    "clubs": "C",
+    "hearts": "H",
+    "spades": "S",
+    "diamonds": "D"
+  }
+
+  const face_to_symbol = {
+    "ten": "10",
+    "jack": "J",
+    "queen": "Q",
+    "king": "K",
+    "ace": "A"
+  }
+
+  function symbolFromId(id) {
+    if (id == "unkown_card") {
+      return ""
+    }
+    split_id = id.split("_")
+    suit = split_id[0]
+    face = split_id[1]
+    return face_to_symbol[face] + suit_to_symbol[suit]
+  }
+
   function confirm() {
     console.log("confirm")
     deselectAll()
 
-    // make backend call
-    mymove()
-    oppmove()
+    if (state == "newgame") {
+      hand = ""
+      elements = document.getElementsByClassName("player-item");
+      for (var i = 0; i < elements.length; i++) {
+        id = getIdFromSrcName(elements[i].firstChild.src)
+        hand += symbolFromId(id)
+        if (i < 4) { hand += " " }
+      }
+      console.log("hand", hand)
 
+      srcname = document.getElementById("play_area_4").src
+      atout = symbolFromId(getIdFromSrcName(srcname))
+
+      srcname = document.getElementById("play_area_1").src
+      oppmove = symbolFromId(getIdFromSrcName(srcname))
+    
+      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": oppmove}, function(response) {
+        r = JSON.parse(response)
+        console.log(r)
+      });
+    }
+
+    // make backend call
+    //mymove()
+    //oppmove()
+    //drawcard()
   }
 
   function hideCard(card_id) {
@@ -422,6 +470,18 @@ body {
 
     footer = document.getElementById("footer")
     footer.innerHTML = "Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card."
+
+  }
+
+  function drawcard() {
+    console.log("drawcard")
+
+    state = "drawcard"
+    disableClick(allClassNames)
+    enableClick(["remainingcard-item"])
+
+    footer = document.getElementById("footer")
+    footer.innerHTML = "Select drawn card."
 
   }
 
