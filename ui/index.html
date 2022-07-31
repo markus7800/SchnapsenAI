@@ -42,13 +42,13 @@
   padding: 0px;
 }
 
-.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item, .played-card-item, .respond-card-item, .unkowncard-item {
+.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item, .played-card-item, .respond-card-item {
   padding: 5px;
   font-size: 10px;
   text-align: center;
 }
 
-.remainingcard-item, .suit-item {
+.remainingcard-item, .suit-item, .unkowncard-item {
   padding: 2px;
   font-size: 10px;
   text-align: center;
@@ -168,7 +168,6 @@ body {
         deselect([parentDiv.className], card_image)
       }
     } else {
-      console.log("here")
       deselect([parentDiv.className], card_image)
     }
 
@@ -176,13 +175,29 @@ body {
       // deselect
       deselectClass(parentDiv.className)
       parentDiv.style.backgroundColor = ""
-      console.log("Deselect", player_selection, card_selection, played_card_selection, lastatout_selected, talon_selected, suit_selection)
+      console.log("Deselect", {
+        "player_selection": player_selection,
+        "card_selection": card_selection,
+        "respond_card_selection": respond_card_selection,
+        "played_card_selection": played_card_selection,
+        "lastatout_selected": lastatout_selected,
+        "talon_selected": talon_selected,
+        "suit_selection": suit_selection
+      })
 
     } else {
       // select
       selectClass(parentDiv.className)
       parentDiv.style.backgroundColor = color
-      console.log("Select", player_selection, card_selection, played_card_selection, lastatout_selected, talon_selected, suit_selection)
+      console.log("Select", {
+        "player_selection": player_selection,
+        "card_selection": card_selection,
+        "respond_card_selection": respond_card_selection,
+        "played_card_selection": played_card_selection,
+        "lastatout_selected": lastatout_selected,
+        "talon_selected": talon_selected,
+        "suit_selection": suit_selection
+      })
     }
   }
 
@@ -352,7 +367,7 @@ body {
             if (i < 5) {
               toggleSelectCard("player_hand_" + (i+1), selectionColor)
             } else {
-              toggleSelectCard("play_area_4")
+              toggleSelectCard("play_area_4", selectionColor)
             }
           }
         }
