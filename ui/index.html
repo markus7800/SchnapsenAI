@@ -42,7 +42,7 @@
   padding: 0px;
 }
 
-.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item, .played-card-item {
+.handcard-item, .player-item, .opponent-item, .lastatout-item, .talon-item, .played-card-item, .respond-card-item, .unkowncard-item {
   padding: 5px;
   font-size: 10px;
   text-align: center;
@@ -67,7 +67,7 @@ body {
 <body>
 
 <div class="grid-container">
-  <div class="header1">Header</div>
+  <div class="header1"><h3>Schnapsen Interface</h3></div>
   <div class="opponent2">
     <div class="handcard-container">
       <div class="handcard-item"><h3>Score:<br>00</h3></div>
@@ -82,7 +82,7 @@ body {
     <div class="handcard-container">
       <div class="handcard-item"><h3 style="visibility: hidden;">Score:<br>00</h3></div>
       <div class="played-card-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown_card.png"></div>
-      <div class="handcard-item"><img id="play_area_2" src="cards/nocard.png"></div>
+      <div class="respond-card-item"><img id="play_area_2" src="cards/nocard.png"></div>
       <div class="handcard-item"><img id="play_area_3" src="cards/nocard.png"></div>
       <div class="lastatout-item"><img onclick="clickCard(this.id)" id="play_area_4" src="cards/unkown_card.png"></div>
       <div class="talon-item"><img onclick="clickCard(this.id)" id="play_area_5" src="cards/unkown_card.png"></div>
@@ -128,7 +128,7 @@ body {
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_hearts" src="cards/hearts.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_spades" src="cards/spades.png"></div>
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_diamonds" src="cards/diamonds.png"></div>
-      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="unkown_card" src="cards/unkown_card.png"></div>
+      <div class="unkowncard-item"><img onclick="clickCard(this.id)" id="unkown_card" src="cards/unkown_card.png"></div>
 
     </div>
     <button type="button" name="engine">Run Engine</button>
@@ -136,7 +136,7 @@ body {
   </div>
   <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
-    <button type="button" name="new" onclick="newgame()">New Game</button>
+    <button type="button" name="new" onclick="location.reload()">New Game</button>
   </div>
 </div>
 
@@ -149,11 +149,13 @@ body {
   var player_selection = ""
   var card_selection = ""
   var played_card_selection = ""
+  var respond_card_selection = ""
   var suit_selection = ""
   var lastatout_selected = false
   var talon_selected = false
 
   function toggleSelectCard(card_id, color) {
+    console.log("toggleSelectCard", card_id)
     id = card_id
     card_image = document.getElementById(id);
     parentDiv = card_image.parentElement;
@@ -166,6 +168,7 @@ body {
         deselect([parentDiv.className], card_image)
       }
     } else {
+      console.log("here")
       deselect([parentDiv.className], card_image)
     }
 
@@ -189,8 +192,12 @@ body {
         player_selection = ""; break;
       case "remainingcard-item":
         card_selection = ""; break;
+      case "unkowncard-item":
+        card_selection = ""; break;
       case "played-card-item":
         played_card_selection = ""; break;
+      case "respond-card-item":
+        respond_card_selection = ""; break;
       case "lastatout-item":
         lastatout_selected = false; break;
       case "talon-item":
@@ -208,8 +215,12 @@ body {
         player_selection = id; break;
       case "remainingcard-item":
         card_selection = id; break;
+      case "unkowncard-item":
+        card_selection = id; break;
       case "played-card-item":
         played_card_selection = id; break;
+      case "respond-card-item":
+        respond_card_selection = id; break;
       case "lastatout-item":
         lastatout_selected = true; break;
       case "talon-item":
@@ -251,7 +262,17 @@ body {
     }
   }
 
-  const allClassNames = ["player-item", "remainingcard-item", "lastatout-item", "talon-item", "suit-item", "played-card-item"]
+  const allClassNames = [
+    "player-item",
+    "remainingcard-item",
+    "unkowncard-item",
+    "lastatout-item",
+    "talon-item",
+    "suit-item",
+    "played-card-item",
+    "respond-card-item"
+  ]
+
   function deselectAll() {
     deselect(allClassNames)
   }
@@ -265,6 +286,11 @@ body {
   function confirm() {
     console.log("confirm")
     deselectAll()
+
+    // make backend call
+    mymove()
+    oppmove()
+
   }
 
   function hideCard(card_id) {
@@ -335,9 +361,10 @@ body {
   }
 
   function newgame() {
+    console.log("newgame")
     state = "newgame"
 
-    deselectAll()
+    /*deselectAll()
 
     elements = document.getElementsByClassName("remainingcard-item");
     for (var i = 0; i < elements.length; i++) {
@@ -350,14 +377,37 @@ body {
       for (var i = 0; i < elements.length; i++) {
         elements[i].firstChild.src = unkown_card.src
       }
-    }
+    }*/
 
     disableClick(allClassNames)
-    enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item"])
+    enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item", "unkowncard-item"])
 
     footer = document.getElementById("footer")
     footer.innerHTML = "Input your hand, atout card, and first opponent move if necessary."
     toggleSelectCard("player_hand_1", selectionColor)
+  }
+
+  function mymove() {
+    console.log("mymove")
+
+    state = "mymove"
+    disableClick(allClassNames)
+    enableClick(["lastatout-item", "player-item", "suit-item", "talon-item"])
+
+    footer = document.getElementById("footer")
+    footer.innerHTML = "Input your move.  Click talon for lock, atout for swap, suit for call, your hand for played card. Click 'Run Engine' for best move."
+  }
+
+  function oppmove() {
+    console.log("oppmove")
+
+    state = "oppmove"
+    disableClick(allClassNames)
+    enableClick(["lastatout-item", "remainingcard-item", "suit-item", "talon-item"])
+
+    footer = document.getElementById("footer")
+    footer.innerHTML = "Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card."
+
   }
 
   newgame()
