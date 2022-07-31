@@ -19,12 +19,10 @@
     'player player remainingcards'
     'footer footer buttons';
   gap: 10px;
-  background-color: #2196F3;
   padding: 0px;
 }
 
 .grid-container > div {
-  background-color: rgba(255, 255, 255, 0.8);
   text-align: center;
   padding: 0px 0;
   font-size: 30px;
@@ -34,29 +32,25 @@
 .card-container {
   display: grid;
   grid-template-columns: auto auto auto auto auto;
-  background-color: #2196F3;
   padding: 0px;
 }
 
 .handcard-container {
   display: grid;
   grid-template-columns: auto auto auto auto auto auto;
-  background-color: #2196F3;
   padding: 0px;
 }
 
 .handcard-item {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.8);
+  background-color: #2196F3;
   padding: 5px;
   font-size: 10px;
   text-align: center;
 }
 
 .remainingcard-item {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.8);
-  padding: 5px;
+  background-color: #2196F3;
+  padding: 2px;
   font-size: 10px;
   text-align: center;
 }
@@ -74,64 +68,64 @@ img {
   <div class="opponent2">
     <div class="handcard-container">
       <div class="handcard-item"><h3>Score:<br>00</h3></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="opponent_hand_1" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="opponent_hand_2" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="opponent_hand_3" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="opponent_hand_4" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="opponent_hand_5" src="cards/unkown.png"></div>
     </div>
   </div>
   <div class="playarea3">
     <div class="handcard-container">
       <div class="handcard-item"><h3 style="visibility: hidden;">Score:<br>00</h3></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/nocard.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="play_area_1" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="play_area_2" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="play_area_3" src="cards/nocard.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="play_area_4" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="play_area_5" src="cards/unkown.png"></div>
     </div>
   </div>
   <div class="player4">
     <div class="handcard-container">
       <div class="handcard-item"><h3>Score:<br>00</h3></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
-      <div class="handcard-item"><img src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="player_hand_1" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="player_hand_2" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="player_hand_3" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="player_hand_4" src="cards/unkown.png"></div>
+      <div class="handcard-item"><img onclick="clickCard(this.id)" id="player_hand_5" src="cards/unkown.png"></div>
     </div>
   </div>
   <div class="remainingcard5">
     <div class="card-container">
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_ten" src="cards/clubs_ten.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_jack" src="cards/clubs_jack.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_queen" src="cards/clubs_queen.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_king" src="cards/clubs_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_ace" src="cards/clubs_ace.png"></div>
 
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_ten" src="cards/hearts_ten.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_jack" src="cards/hearts_jack.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_queen" src="cards/hearts_queen.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_king" src="cards/hearts_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_ace" src="cards/hearts_ace.png"></div>
 
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_ten" src="cards/spades_ten.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_jack" src="cards/spades_jack.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_queen" src="cards/spades_queen.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_king" src="cards/spades_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_ace" src="cards/spades_ace.png"></div>
 
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
-      <div class="remainingcard-item"><img src="cards/unkown.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ten" src="cards/diamonds_ten.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_jack" src="cards/diamonds_jack.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_queen" src="cards/diamonds_queen.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_king" src="cards/diamonds_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ace" src="cards/diamonds_ace.png"></div>
 
-      <div class="remainingcard-item"><img src="cards/clubs.png"></div>
-      <div class="remainingcard-item"><img src="cards/hearts.png"></div>
-      <div class="remainingcard-item"><img src="cards/spades.png"></div>
-      <div class="remainingcard-item"><img src="cards/diamonds.png"></div>
-      <div class="remainingcard-item"><img src="cards/nosuit.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="call_club" src="cards/clubs.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="call_hearts" src="cards/hearts.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="call_spades" src="cards/spades.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="call_diamonds" src="cards/diamonds.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" src="cards/nosuit.png"></div>
 
     </div>
     <button type="button" name="confirm">Confirm Move</button>
@@ -142,6 +136,10 @@ img {
 
 <script type="text/javascript">
   console.log("hello")
+
+  function clickCard(id) {
+    console.log("click", id)
+  }
 </script>
 
 </body>
