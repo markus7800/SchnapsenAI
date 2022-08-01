@@ -66,8 +66,16 @@ end
 
 route("/newgame") do
     global game_string
-    global game
     global move1
+    global move2
+    global drawncard
+    global game
+
+    game_string = ""
+    move1 = "*"
+    move2 = "*"
+    drawncard = "*"
+    game = Game(0)
 
     hand = params(:hand)
     lastatout = params(:atout)
@@ -146,18 +154,19 @@ function make_game_move()
 
     game = game_from_str(game_string * s)
 
-    game_string *= s * " #\n"
+    if move1 != "*" && move2 != "*"
+        game_string *= s * " #\n"
 
-    println(game_string)
-    println(game)
+        println(game_string)
+        println(game)
 
-    move1 = "*"
-    move2 = "*"
-    drawncard = "*"
+        move1 = "*"
+        move2 = "*"
+        drawncard = "*"
+    end
 end
 
 route("/mymove") do
-    global game_string
     global move1
     global move2
     global game
@@ -232,6 +241,61 @@ route("/drawcard") do
             "ok" => false,
             "error" => sprint(show, e)
         )))
+    end
+end
+
+route("/oppmove") do
+    global move1
+    global move2
+    global game
+
+    card = params(:card)
+    lock = parse(Bool, params(:lock))
+    call = parse(Bool, params(:call))
+    swap = parse(Bool, params(:swap))
+
+
+    move = card
+    if (lock || call || swap)
+        move *= " "
+    end
+    if lock
+        move *= "z"
+    end
+    if call
+        move *= "a"
+    end
+    if swap
+        move *= "t"
+    end
+    if game.perspective == 1
+        move2 = move
+    else
+        move1 = move
+    end
+
+    draw_card = !is_locked(game.s) && game.s.n_talon > 0 && move1 != "*" && move2 != "*"
+
+    if draw_card
+        game_json = game_to_json(game)
+        game_json["next"] = "drawcard"
+        return respond(json(Dict(
+            "ok" => true,
+            "game" => game_json
+        )))
+    else
+        try
+            make_game_move()
+            return respond(json(Dict(
+                "ok" => true,
+                "game" => game_to_json(game)
+            )))
+        catch e
+            return respond(json(Dict(
+                "ok" => false,
+                "error" => sprint(show, e)
+            )))
+        end
     end
 end
 

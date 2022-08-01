@@ -607,7 +607,6 @@ body {
     }
 
     if (state == "mymove") {
-      setFooterMsg("...")
       console.log("mymove", {
         "player_selection": player_selection,
         "card_selection": card_selection,
@@ -624,7 +623,9 @@ body {
       swap = lastatout_selected
 
       setFooterMsg("...")
-      $.get("/mymove", {"card": card, "lock": lock, "call": call, "swap": swap}, function(response) {
+      const payload = {"card": card, "lock": lock, "call": call, "swap": swap}
+      console.log("/mymove", payload)
+      $.get("/mymove", payload, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {
@@ -638,7 +639,38 @@ body {
       card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
 
       setFooterMsg("...")
-      $.get("/drawcard", {"card": card}, function(response) {
+      const payload = {"card": card}
+      console.log("/drawcard", payload)
+      $.get("/drawcard", payload, function(response) {
+        r = JSON.parse(response)
+        console.log(r)
+        if (r.ok) {
+          setupGameFromJson(r.game)
+          deselectAll()
+        }
+      });
+    }
+
+    if (state == "oppmove") {
+      console.log("oppmove", {
+        "player_selection": player_selection,
+        "card_selection": card_selection,
+        "respond_card_selection": respond_card_selection,
+        "played_card_selection": played_card_selection,
+        "lastatout_selected": lastatout_selected,
+        "talon_selected": talon_selected,
+        "suit_selection": suit_selection
+      })
+
+      card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
+      call = suit_selection != ""
+      lock = talon_selected
+      swap = lastatout_selected
+
+      setFooterMsg("...")
+      const payload = {"card": card, "lock": lock, "call": call, "swap": swap}
+      console.log("/oppmove", payload)
+      $.get("/oppmove", payload, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {
@@ -648,7 +680,6 @@ body {
       });
     }
   }
-
 
   newgame()
 
