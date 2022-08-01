@@ -87,9 +87,13 @@ function choose(cards::Cards, k::Int)::Vector{Cards}
     return append!(A, B)
 end
 
-function get_candidate_cards(game::Game)
-    player_hand = game.s.player_to_move == 1 ? game.s.hand1 : game.s.hand2
-    real_opponent_hand = game.s.player_to_move == 1 ? game.s.hand2 : game.s.hand1
+function get_candidate_cards(game::Game; player=missing)
+    if ismissing(player)
+        player = game.s.player_to_move
+    end
+
+    player_hand = player == 1 ? game.s.hand1 : game.s.hand2
+    real_opponent_hand = player == 1 ? game.s.hand2 : game.s.hand1
 
     candidate_cards = remove(ALLCARDS, game.played_cards)
     candidate_cards = remove(candidate_cards, game.last_atout)
@@ -97,13 +101,13 @@ function get_candidate_cards(game::Game)
 
     n_opponent_hand = length(real_opponent_hand)
     cards_add = NOCARDS
-    if game.atout_swap != NOCARD && !(game.atout_swap in game.played_cards) && game.atout_swap_player != game.s.player_to_move
+    if game.atout_swap != NOCARD && !(game.atout_swap in game.played_cards) && game.atout_swap_player != player
         candidate_cards = remove(candidate_cards, game.atout_swap)
         cards_add = add(cards_add, game.atout_swap)
         n_opponent_hand -= 1
     end
     for (callcard, player) in game.calls
-        if !(callcard in game.played_cards) && player != game.s.player_to_move
+        if !(callcard in game.played_cards) && player != player
             candidate_cards = remove(candidate_cards, callcard)
             cards_add = add(cards_add, callcard)
             n_opponent_hand -= 1
