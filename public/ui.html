@@ -538,6 +538,8 @@ body {
   }
 
   function engine() {
+    console.log("engine")
+
     deselectAll()
 
     if (state != "mymove") { return }
@@ -554,7 +556,7 @@ body {
           }
         }
         if (r.lock) {
-          toggleSelectCard("play_area_5", )
+          toggleSelectCard("play_area_5", selectionColor)
         }
         if (r.swap) {
           toggleSelectCard("play_area_4", selectionColor)
