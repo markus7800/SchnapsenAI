@@ -132,8 +132,8 @@ body {
       <div class="unkowncard-item"><img onclick="clickCard(this.id)" id="unkown_card" src="cards/unkown_card.png"></div>
 
     </div>
-    <button type="button" name="engine" onclick="engine()">Run Engine</button>
-    <button type="button" name="confirm" onclick="confirm()">Confirm</button>
+    <button type="button" id="engine_button" onclick="engine()">Run Engine</button>
+    <button type="button" id="confirm_button" onclick="confirm()">Confirm</button>
   </div>
   <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
@@ -418,6 +418,8 @@ body {
 
   function newgame() {
     console.log("newgame")
+    document.getElementById("engine_button").disabled = true
+
     state = "newgame"
 
     disableClick(allClassNames)
@@ -429,6 +431,7 @@ body {
 
   function mymove() {
     console.log("mymove")
+    document.getElementById("engine_button").disabled = false
 
     state = "mymove"
     disableClick(allClassNames)
@@ -439,8 +442,10 @@ body {
 
   function oppmove() {
     console.log("oppmove")
+    document.getElementById("engine_button").disabled = true
 
     state = "oppmove"
+    deselectAll()
     disableClick(allClassNames)
     enableClick(["lastatout-item", "remainingcard-item", "suit-item", "talon-item"])
 
@@ -449,8 +454,10 @@ body {
 
   function drawcard() {
     console.log("drawcard")
+    document.getElementById("engine_button").disabled = true
 
     state = "drawcard"
+    deselectAll()
     disableClick(allClassNames)
     enableClick(["remainingcard-item"])
 
@@ -464,6 +471,7 @@ body {
 
   function gameover() {
     console.log("gameover")
+    document.getElementById("engine_button").disabled = true
 
     state = "gameover"
     disableClick(allClassNames)
@@ -517,10 +525,14 @@ body {
     if (gamejson.is_gameover) {
       gameover()
     } else {
-      if (gamejson.player_to_move == "me") {
+      if (gamejson.next == "me") {
         mymove()
-      } else {
+      } else if (gamejson.next == "opponent") {
         oppmove()
+      } else if (gamejson.next == "drawcard") {
+        drawcard()
+      } else {
+        console.log("Unkown next step: ", gamejson.next)
       }
     }
   }
@@ -564,9 +576,10 @@ body {
 
   function confirm() {
     console.log("confirm")
-    deselectAll()
 
     if (state == "newgame") {
+      deselectAll()
+
       hand = ""
       elements = document.getElementsByClassName("player-item");
       for (var i = 0; i < elements.length; i++) {
@@ -580,10 +593,10 @@ body {
       atout = symbolFromId(getIdFromSrcName(srcname))
 
       srcname = document.getElementById("play_area_1").src
-      oppmove = symbolFromId(getIdFromSrcName(srcname))
+      opponent_move = symbolFromId(getIdFromSrcName(srcname))
 
       setFooterMsg("...")
-      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": oppmove}, function(response) {
+      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": opponent_move}, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {
@@ -592,10 +605,31 @@ body {
       });
     }
 
-    // make backend call
-    //mymove()
-    //oppmove()
-    //drawcard()
+    if (state == "mymove") {
+      setFooterMsg("...")
+      console.log("mymove", {
+        "player_selection": player_selection,
+        "card_selection": card_selection,
+        "respond_card_selection": respond_card_selection,
+        "played_card_selection": played_card_selection,
+        "lastatout_selected": lastatout_selected,
+        "talon_selected": talon_selected,
+        "suit_selection": suit_selection
+      })
+
+      card = symbolFromId(getIdFromSrcName(document.getElementById(player_selection).src))
+      call = suit_selection != ""
+      lock = talon_selected
+      swap = lastatout_selected
+
+      $.get("/mymove", {"card": card, "lock": lock, "call": call, "swap": swap}, function(response) {
+        r = JSON.parse(response)
+        console.log(r)
+        if (r.ok) {
+          setupGameFromJson(r.game)
+        }
+      });
+    }
   }
 
   newgame()
