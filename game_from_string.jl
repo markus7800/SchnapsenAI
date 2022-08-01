@@ -21,7 +21,7 @@ function game_from_str(s)
         #println(c_str, ": ", card)
         h = add(h, card)
     end
-    @assert length(h) == 5
+    @assert length(h) == 5 "Initial hand has to be 5 cards, but is $h."
 
     if perspective == 1
         h1 = h
@@ -39,21 +39,21 @@ function game_from_str(s)
     last_drawn_card = NOCARD
     if length(history) > 0
         function process_move(m::Move, player::Int)
-            @assert !(m.card in played_cards)
+            @assert !(m.card in played_cards) "Card $(m.card) was already played ($(played_cards))."
 
             if player == perspective
-                @assert m.card in hs[perspective]
+                @assert m.card in hs[perspective] "Played card $(m.card) is not in your hand $(hs[perspective])."
             else
-                @assert !(m.card in hs[perspective])
+                @assert !(m.card in hs[perspective]) "Opponent played card $(m.card) that is in your hand $(hs[perspective])."
             end
 
             if m.swap
                 atout_jack = Card(game.s.atout, JACK)
-                @assert last_atout != atout_jack
+                @assert last_atout != atout_jack "Cannot swap if last atout is not jack $(last_atout)."
                 if player == perspective
-                    @assert atout_jack in hs[perspective]
+                    @assert atout_jack in hs[perspective] "Atout jack is not in your hand $(hs[perspective])."
                 else
-                    @assert !(atout_jack in hs[perspective])
+                    @assert !(atout_jack in hs[perspective]) "Oppenent tried to swap but you have atout_jack $(hs[perspective])."
                 end
 
                 game.atout_swap = last_atout
@@ -76,11 +76,11 @@ function game_from_str(s)
 
                 spouse = face(m.card) == KING ? QUEEN : KING
                 spouse = Card(suit(m.card), spouse)
-                @assert !(spouse in played_cards)
+                @assert !(spouse in played_cards) "Spouse $spouse is already played ($(played_cards))."
                 if player == perspective
-                    @assert spouse in hs[perspective] "$spouse"
+                    @assert spouse in hs[perspective] "Spouse $spouse is not in your hand $(hs[perspective])."
                 else
-                    @assert !(spouse in hs[perspective])
+                    @assert !(spouse in hs[perspective]) "Spouse $spouse is your hand $(hs[perspective])."
                 end
                 push!(game.calls, (spouse, player))
             end
@@ -96,33 +96,36 @@ function game_from_str(s)
 
         player_to_move = 1
         for (i, step) in enumerate(split(history, " # "))
+            if step == ""
+                break
+            end
             m1, m2, d = split(step, " : ")
             println(i, ": ", m1, ",", m2, ",", d)
             if m1 == "*" && m2 == "*" && d == "*"
                 break
             end
 
-            @assert !(m1 == "*" && m2 == "*")
+            @assert !(m1 == "*" && m2 == "*") "Either move1 $m1 or move2 $m2 must be set."
 
             trick_incomplete = m1 == "*" || m2 == "*"
 
             if is_locked(game.s)
-                @assert d == "*"
+                @assert d == "*" "Game is locked, you cannot draw card."
             else
                 if trick_incomplete
-                    @assert d == "*"
+                    @assert d == "*" "Trick is incomplete, you cannot draw card."
                 else
                     if stringtomove(m1).lock || stringtomove(m2).lock
-                        @assert d == "*"
+                        @assert d == "*" "Game is just locked, you cannot draw card."
                     else
-                        @assert d != "*"
+                        @assert d != "*" "Trick complete, must draw card."
                     end
                 end
             end
 
             if trick_incomplete
-                player_to_move == 1 && @assert m1 != "*"
-                player_to_move == 2 && @assert m2 != "*"
+                player_to_move == 1 && @assert m1 != "*" "Player to move is 1 but move1 is not set."
+                player_to_move == 2 && @assert m2 != "*" "Player to move is 2 but move2 is not set."
 
                 if player_to_move == 1
                     m = stringtomove(m1)
@@ -131,7 +134,7 @@ function game_from_str(s)
                 end
 
                 if is_locked(game.s)
-                    @assert !m.lock
+                    @assert !m.lock "Game is already locked."
                 end
 
                 process_move(m, player_to_move)
@@ -149,9 +152,9 @@ function game_from_str(s)
                 process_move(m2, 2)
 
                 if d != "*"
-                    @assert !is_locked(game.s)
+                    @assert !is_locked(game.s) "Game is locked, but card was drawn."
                     d = stringtocard(d)
-                    @assert !(d in played_cards)
+                    @assert !(d in played_cards) "Drawn card $d was already played $(played_cards)."
                     hs[perspective] = add(hs[perspective], d)
                     last_drawn_card = d
                 end
@@ -160,9 +163,9 @@ function game_from_str(s)
                 played_card = player_to_move == 1 ? m1.card : m2.card
                 m = player_to_move == 1 ? m2 : m1
                 move_card = m.card
-                @assert !m.lock
-                @assert !m.call
-                @assert !m.swap
+                @assert !m.lock "Response move cannot lock."
+                @assert !m.call "Response move cannot call."
+                @assert !m.swap "Response move cannot swap."
 
                 player_to_move = player_to_move == 1 ? 2 : 1
 
@@ -240,9 +243,9 @@ function game_from_str(s)
     if length(remaining) == 0
         if game.s.lasttrick == perspective
             # opponent gets last_atout
-            @assert last_atout != last_drawn_card
+            @assert last_atout != last_drawn_card "You won last trick. Cannot draw last atout."
         else
-            @assert last_atout == last_drawn_card
+            @assert last_atout == last_drawn_card "You lost last trick. Must draw last atout."
         end
         n_talon = 0
     else
