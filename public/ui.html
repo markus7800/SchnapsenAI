@@ -469,13 +469,13 @@ body {
       footer.innerHTML = msg
   }
 
-  function gameover() {
+  function gameover(winner, winscore) {
     console.log("gameover")
     document.getElementById("engine_button").disabled = true
 
     state = "gameover"
     disableClick(allClassNames)
-    setFooterMsg("Game over.")
+    setFooterMsg("Game over, " + winner + " won with score " + winscore + ".")
   }
 
   function setCard(card_id, card_name) {
@@ -523,7 +523,7 @@ body {
     document.getElementById("player_score").innerHTML = "Score:<br>" + gamejson.player_score
 
     if (gamejson.is_gameover) {
-      gameover()
+      gameover(gamejson.winner, gamejson.winscore)
     } else {
       if (gamejson.next == "me") {
         mymove()
@@ -572,8 +572,8 @@ body {
             toggleSelectCard("call_diamonds", selectionColor)
           }
         }
-
-        setFooterMsg("Engine evaluation : loosing probability = " + r.losing_probability + ".")
+        prob = Math.round(r.losing_probability * 10000 + Number.EPSILON ) / 10000
+        setFooterMsg("Engine evaluation : loosing probability = " + prob + ".")
       }
     })
   }

@@ -117,7 +117,7 @@ function number_of_possible_games(n_talon::Int, depth::Int)
 end
 
 function print_number_of_possible_games()
-    for n in 10:-1:^0
+    for n in 10:-1:0
         println("$n: ", number_of_possible_games(n))
     end
 end

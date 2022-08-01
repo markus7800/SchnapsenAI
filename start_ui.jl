@@ -43,6 +43,13 @@ function game_to_json(game::Game)
     player_to_move = game.perspective == game.s.player_to_move ? "me" : "opponent"
     player_score = playerscore(game.s, game.perspective)
     opponent_score = playerscore(game.s, game.perspective == 1 ? 2 : 1)
+    w = "nobody"
+    ws = 0
+    if is_gameover(game.s) && winner(game.s) != 0
+        w = winner(game.s) == game.perspective ? "you" : "opponent"
+        ws = winscore(game.s)
+    end
+
     j = Dict(
         "remaining_cards" => [card_to_name(card) for card in get_candidate_cards(game, player=game.perspective)[1]],
         "hand" => [card_to_name(card) for card in hand],
@@ -54,7 +61,9 @@ function game_to_json(game::Game)
         "player_score" => player_score,
         "opponent_score" => opponent_score,
         "n_opphand" => length(opphand),
-        "is_gameover" => is_gameover(game.s)
+        "is_gameover" => is_gameover(game.s),
+        "winner" => w,
+        "winscore" => ws
     )
     return j
 end
@@ -141,7 +150,7 @@ route("/engine") do
     move, prob = get_best_move(game)
 
     card = card_to_name(move.card)
-    @info "Best move: " card move.lock move.call move.swap
+    @info "Best move: " card move.lock move.call move.swap prob
 
     return respond(json(Dict(
         "ok" => true,
@@ -168,7 +177,6 @@ function make_game_move()
         game_string *= s * " #\n"
 
         println(game_string)
-        println(game)
 
         move1 = "*"
         move2 = "*"
@@ -207,7 +215,7 @@ route("/mymove") do
         move2 = move
     end
 
-    draw_card = !is_locked(game.s) && game.s.n_talon > 0 && move1 != "*" && move2 != "*"
+    draw_card = !is_locked(game.s) && !lock && game.s.n_talon > 0 && move1 != "*" && move2 != "*"
 
     if draw_card
         game_json = game_to_json(game)
@@ -284,7 +292,7 @@ route("/oppmove") do
         move1 = move
     end
 
-    draw_card = !is_locked(game.s) && game.s.n_talon > 0 && move1 != "*" && move2 != "*"
+    draw_card = !is_locked(game.s) && !lock && game.s.n_talon > 0 && move1 != "*" && move2 != "*"
 
     if draw_card
         game_json = game_to_json(game)
@@ -312,4 +320,6 @@ end
 @info "Start listening at localhost:8000"
 up(8000, async=false)
 
-‚
+# TODO: if atout swap selected -> make swapped card available for play
+# TODO: say winner and score
+# TODO: round losing prob frontend
