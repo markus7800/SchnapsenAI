@@ -101,28 +101,28 @@ body {
   </div>
   <div class="remainingcard5">
     <div class="card-container">
-      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_ten" src="cards/clubs_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_jack" src="cards/clubs_jack.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_queen" src="cards/clubs_queen.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_king" src="cards/clubs_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_ten" src="cards/clubs_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_ace" src="cards/clubs_ace.png"></div>
 
-      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_ten" src="cards/hearts_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_jack" src="cards/hearts_jack.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_queen" src="cards/hearts_queen.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_king" src="cards/hearts_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_ten" src="cards/hearts_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="hearts_ace" src="cards/hearts_ace.png"></div>
 
-      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_ten" src="cards/spades_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_jack" src="cards/spades_jack.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_queen" src="cards/spades_queen.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_king" src="cards/spades_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_ten" src="cards/spades_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="spades_ace" src="cards/spades_ace.png"></div>
 
-      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ten" src="cards/diamonds_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_jack" src="cards/diamonds_jack.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_queen" src="cards/diamonds_queen.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_king" src="cards/diamonds_king.png"></div>
+      <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ten" src="cards/diamonds_ten.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="diamonds_ace" src="cards/diamonds_ace.png"></div>
 
       <div class="suit-item"><img onclick="clickCard(this.id)" id="call_clubs" src="cards/clubs.png"></div>
@@ -423,7 +423,7 @@ body {
     state = "newgame"
 
     disableClick(allClassNames)
-    enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item", "unkowncard-item"])
+    enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item", "unkowncard-item", "talon-item", "suit-item"])
 
     setFooterMsg("Input your hand, atout card, and first opponent move if necessary.")
     toggleSelectCard("player_hand_1", selectionColor)
@@ -572,16 +572,16 @@ body {
             toggleSelectCard("call_diamonds", selectionColor)
           }
         }
+
+        setFooterMsg("Engine evaluation : winning probability = " + (1 - r.losing_probability) + ".")
       }
     })
   }
 
   function confirm() {
     console.log("confirm", state)
-
+    
     if (state == "newgame") {
-      deselectAll()
-
       hand = ""
       elements = document.getElementsByClassName("player-item");
       for (var i = 0; i < elements.length; i++) {
@@ -596,9 +596,14 @@ body {
 
       srcname = document.getElementById("play_area_1").src
       opponent_move = symbolFromId(getIdFromSrcName(srcname))
+      call = suit_selection != ""
+      lock = talon_selected
+      swap = lastatout_selected
 
       setFooterMsg("...")
-      $.get("/newgame", {"hand": hand, "atout": atout, "oppmove": opponent_move}, function(response) {
+      const payload = {"hand": hand, "atout": atout, "oppmove": opponent_move, "lock": lock, "call": call, "swap": swap}
+      console.log("/newgame", payload)
+      $.get("/newgame", payload, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {

@@ -80,15 +80,31 @@ route("/newgame") do
     hand = params(:hand)
     lastatout = params(:atout)
     oppmove = params(:oppmove)
+    lock = parse(Bool, params(:lock))
+    call = parse(Bool, params(:call))
+    swap = parse(Bool, params(:swap))
 
-    @info "/negame" hand lastatout oppmove
+    @info "/newgame" hand lastatout oppmove lock call swap
 
     perspective = oppmove == "" ? "1" : "2"
 
     game_string = hand * " - " * perspective * " - " * lastatout * " - "
     if oppmove != ""
         move1 = oppmove
-        incomplete_trick = oppmove * " : * : *"
+        if (lock || call || swap)
+            move1 *= " "
+        end
+        if lock
+            move1 *= "z"
+        end
+        if call
+            move1 *= "a"
+        end
+        if swap
+            move1 *= "t"
+        end
+
+        incomplete_trick = move1 * " : * : *"
     else
         incomplete_trick = ""
     end
@@ -121,15 +137,6 @@ route("/engine") do
             "error" => "Not your move."
         )))
     end
-
-    # return respond(json(Dict(
-    #     "ok" => true,
-    #     "card" => "hearts_ten",
-    #     "lock" => true,
-    #     "call" => true,
-    #     "swap" => true,
-    #     "losing_probability" => 0.6
-    # )))
 
     move, prob = get_best_move(game)
 
@@ -301,3 +308,5 @@ end
 
 @info "Start listening at localhost:8000"
 up(8000, async=false)
+
+‚
