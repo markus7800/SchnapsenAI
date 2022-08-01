@@ -431,7 +431,5 @@ function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
     move = movelist[amin]
     prob = losing_prob[amin]
 
-    @info @sprintf("Best move: %s with losing probability %.4f", move, prob)
-
     return move, prob
 end

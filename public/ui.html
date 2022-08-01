@@ -573,14 +573,14 @@ body {
           }
         }
 
-        setFooterMsg("Engine evaluation : winning probability = " + (1 - r.losing_probability) + ".")
+        setFooterMsg("Engine evaluation : loosing probability = " + r.losing_probability + ".")
       }
     })
   }
 
   function confirm() {
     console.log("confirm", state)
-    
+
     if (state == "newgame") {
       hand = ""
       elements = document.getElementsByClassName("player-item");
