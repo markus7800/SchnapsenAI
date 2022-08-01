@@ -541,8 +541,8 @@ body {
     deselectAll()
 
     if (state != "mymove") { return }
-    setFooterMsg("...")
 
+    setFooterMsg("...")
     $.get("/engine", function(response) {
       r = JSON.parse(response)
       console.log(r)
@@ -575,7 +575,7 @@ body {
   }
 
   function confirm() {
-    console.log("confirm")
+    console.log("confirm", state)
 
     if (state == "newgame") {
       deselectAll()
@@ -601,6 +601,7 @@ body {
         console.log(r)
         if (r.ok) {
           setupGameFromJson(r.game)
+          deselectAll()
         }
       });
     }
@@ -622,15 +623,32 @@ body {
       lock = talon_selected
       swap = lastatout_selected
 
+      setFooterMsg("...")
       $.get("/mymove", {"card": card, "lock": lock, "call": call, "swap": swap}, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {
           setupGameFromJson(r.game)
+          deselectAll()
+        }
+      });
+    }
+
+    if (state == "drawcard") {
+      card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
+
+      setFooterMsg("...")
+      $.get("/drawcard", {"card": card}, function(response) {
+        r = JSON.parse(response)
+        console.log(r)
+        if (r.ok) {
+          setupGameFromJson(r.game)
+          deselectAll()
         }
       });
     }
   }
+
 
   newgame()
 
