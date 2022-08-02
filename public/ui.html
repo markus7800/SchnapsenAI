@@ -157,14 +157,13 @@ body {
 
   function toggleSelectCard(card_id, color) {
     console.log("toggleSelectCard", card_id)
-    id = card_id
-    card_image = document.getElementById(id);
-    parentDiv = card_image.parentElement;
+    const id = card_id
+    const card_image = document.getElementById(id);
+    const parentDiv = card_image.parentElement;
 
-    classGroup = [parentDiv.className]
+    var classGroup = [parentDiv.className]
     if (state == "newgame") {
-      classGroup = ["played-card-item", "lastatout-item", "player-item"]
-    } else if (state == "mymove") {
+      classGroup = ["lastatout-item", "player-item"]
     }
 
     if (classGroup.some(el => el == parentDiv.className)) {
@@ -190,7 +189,7 @@ body {
 
     } else {
       // select
-      selectClass(parentDiv.className)
+      selectClass(parentDiv.className, id)
       parentDiv.style.backgroundColor = color
       console.log("Select", {
         "player_selection": player_selection,
@@ -217,6 +216,10 @@ body {
       case "respond-card-item":
         respond_card_selection = ""; break;
       case "lastatout-item":
+        if (state == "oppmove") {
+          atoutid = getIdFromSrcName(document.getElementById("play_area_4").src)
+          if (atoutid != "unkown_card") { hideCard(atoutid) }
+        }
         lastatout_selected = false; break;
       case "talon-item":
         talon_selected = false; break;
@@ -227,7 +230,7 @@ body {
     }
   }
 
-  function selectClass(className) {
+  function selectClass(className, id) {
     switch(className) {
       case "player-item":
         player_selection = id; break;
@@ -240,6 +243,10 @@ body {
       case "respond-card-item":
         respond_card_selection = id; break;
       case "lastatout-item":
+        if (state == "oppmove") {
+          const atoutid = getIdFromSrcName(document.getElementById("play_area_4").src)
+          if (atoutid != "unkown_card") { showCard(atoutid) }
+        }
         lastatout_selected = true; break;
       case "talon-item":
         talon_selected = true; break;
@@ -253,7 +260,7 @@ body {
   function deselect(classNames, except) {
     for (const className of classNames) {
       deselectClass(className)
-      elements = document.getElementsByClassName(className);
+      const elements = document.getElementsByClassName(className);
       for (var i = 0; i < elements.length; i++) {
         if (!elements[i].contains(except)) {
           elements[i].style.backgroundColor = "";
@@ -264,7 +271,7 @@ body {
 
   function disableClick(classNames) {
     for (const className of classNames) {
-      elements = document.getElementsByClassName(className);
+      const elements = document.getElementsByClassName(className);
       for (var i = 0; i < elements.length; i++) {
         elements[i].firstChild.onclick = false;
       }
@@ -273,9 +280,16 @@ body {
 
   function enableClick(classNames) {
     for (const className of classNames) {
-      elements = document.getElementsByClassName(className);
+      const elements = document.getElementsByClassName(className);
       for (var i = 0; i < elements.length; i++) {
-        elements[i].firstChild.onclick = function() { clickCard(this.id) };
+        if (className == "remainingcard-item") {
+          if (elements[i].firstChild.style.opacity == 1.0) {
+            // make sure to correctly show/hide remaining cards before calling enableClick
+            elements[i].firstChild.onclick = function() { clickCard(this.id) };
+          }
+        } else {
+          elements[i].firstChild.onclick = function() { clickCard(this.id) };
+        }
       }
     }
   }
@@ -320,34 +334,34 @@ body {
     if (id == "unkown_card") {
       return ""
     }
-    split_id = id.split("_")
-    suit = split_id[0]
-    face = split_id[1]
+    const split_id = id.split("_")
+    const suit = split_id[0]
+    const face = split_id[1]
     return face_to_symbol[face] + suit_to_symbol[suit]
   }
 
   function hideCard(card_id) {
-    card_image = document.getElementById(card_id);
+    const card_image = document.getElementById(card_id);
     if (card_image != null) {
       card_image.style.opacity = 0.1
-      card_image.onclick = false
+      card_image.onclick = null
     } else {
       console.log("Card", card_id, "not found.")
     }
   }
 
   function showCard(card_id) {
-      card_image = document.getElementById(card_id);
-      if (card_image != null) {
-        card_image.style.opacity = 1.0
-        card_image.onclick = function() { clickCard(this.id) }
-      } else {
-        console.log("Card", card_id, "not found.")
-      }
+    const card_image = document.getElementById(card_id);
+    if (card_image != null) {
+      card_image.style.opacity = 1.0
+      card_image.onclick = function() { clickCard(this.id) }
+    } else {
+      console.log("Card", card_id, "not found.")
+    }
   }
 
   function showGameCard(card_id) {
-    card_image = document.getElementById(card_id);
+    const card_image = document.getElementById(card_id);
     if (card_image != null) {
       card_image.style.visibility = "visible"
     } else {
@@ -356,7 +370,7 @@ body {
   }
 
   function hideGameCard(card_id) {
-    card_image = document.getElementById(card_id);
+    const card_image = document.getElementById(card_id);
     if (card_image != null) {
       card_image.style.visibility = "hidden"
     } else {
@@ -365,14 +379,14 @@ body {
   }
 
   function isGameCardHidden(card_id) {
-    card_image = document.getElementById(card_id);
+    const card_image = document.getElementById(card_id);
     return card_image.style.visibility == "hidden"
   }
 
   function getIdFromSrcName(srcName) {
     //"card/suit_face.png"
-    fileName = srcName.split("cards")[1]
-    id = fileName.slice(1, fileName.length-4)
+    const fileName = srcName.split("cards")[1]
+    const id = fileName.slice(1, fileName.length-4)
     return id
   }
 
@@ -380,13 +394,21 @@ body {
     if (state == "newgame") {
       console.log("selectionHandler", state, card_selection, player_selection, lastatout_selected, played_card_selection)
 
-      if (card_selection != "") {
+      if (lastatout_selected && played_card_selection != "" && card_selection == "") {
+          console.log("here")
+          const other_card_image = document.getElementById(played_card_selection)
+          const card_selection_image = document.getElementById("play_area_4")
+
+          other_card_image.src = card_selection_image.src
+          toggleSelectCard("play_area_1")
+
+      } else if (card_selection != "") {
         var other_selection = ""
         if (player_selection != "") {
           other_selection = player_selection
         } else if (lastatout_selected) {
           other_selection = "play_area_4"
-        } else if (played_card_selection) {
+        } else if (played_card_selection != "") {
           other_selection = "play_area_1"
         }
         if (other_selection != "") {
@@ -394,8 +416,8 @@ body {
             hideCard(card_selection)
           }
 
-          other_card_image = document.getElementById(other_selection)
-          card_selection_image = document.getElementById(card_selection)
+          const other_card_image = document.getElementById(other_selection)
+          const card_selection_image = document.getElementById(card_selection)
 
           showCard(getIdFromSrcName(other_card_image.src))
           other_card_image.src = card_selection_image.src
@@ -404,7 +426,7 @@ body {
           toggleSelectCard(card_selection)
 
           if (other_selection.includes("player_hand")) {
-            i = parseInt(other_selection.split("player_hand_")[1])
+            const i = parseInt(other_selection.split("player_hand_")[1])
             if (i < 5) {
               toggleSelectCard("player_hand_" + (i+1), selectionColor)
             } else {
@@ -422,10 +444,15 @@ body {
 
     state = "newgame"
 
+    const elements = document.getElementsByClassName("remainingcard-item");
+    for (var i = 0; i < elements.length; i++) {
+      showCard(elements[i].firstChild.id)
+    }
+
     disableClick(allClassNames)
     enableClick(["played-card-item", "lastatout-item", "player-item", "remainingcard-item", "unkowncard-item", "talon-item", "suit-item"])
 
-    setFooterMsg("Input your hand, atout card, and first opponent move if necessary.")
+    setFooterMsg("Input your hand, atout card, and first opponent move if necessary. Click atout and then opponent card for opponent to swap and play card immediately. Click talon for lock, atout for swap, suit for call.")
     toggleSelectCard("player_hand_1", selectionColor)
   }
 
@@ -465,7 +492,7 @@ body {
   }
 
   function setFooterMsg(msg) {
-      footer = document.getElementById("footer")
+      const footer = document.getElementById("footer")
       footer.innerHTML = msg
   }
 
@@ -479,7 +506,7 @@ body {
   }
 
   function setCard(card_id, card_name) {
-    card_image = document.getElementById(card_id);
+    const card_image = document.getElementById(card_id);
     card_image.src = document.getElementById(card_name).src
   }
 
@@ -511,7 +538,7 @@ body {
       setCard("play_area_5", "no_card")
     }
 
-    elements = document.getElementsByClassName("remainingcard-item");
+    const elements = document.getElementsByClassName("remainingcard-item");
     for (var i = 0; i < elements.length; i++) {
       hideCard(elements[i].firstChild.id)
     }
@@ -550,7 +577,7 @@ body {
       console.log(r)
       if (r.ok) {
         for (var i=1; i <= 5; i++) {
-          card_img = document.getElementById("player_hand_" + i)
+          const card_img = document.getElementById("player_hand_" + i)
           if (card_img.src.includes(r.card) && !isGameCardHidden(card_img.id)) {
             toggleSelectCard(card_img.id, selectionColor)
           }
@@ -572,7 +599,7 @@ body {
             toggleSelectCard("call_diamonds", selectionColor)
           }
         }
-        prob = Math.round(r.losing_probability * 10000 + Number.EPSILON ) / 10000
+        const prob = Math.round(r.losing_probability * 10000 + Number.EPSILON ) / 10000
         setFooterMsg("Engine evaluation : loosing probability = " + prob + ".")
       }
     })
@@ -582,23 +609,23 @@ body {
     console.log("confirm", state)
 
     if (state == "newgame") {
-      hand = ""
-      elements = document.getElementsByClassName("player-item");
+      var hand = ""
+      const elements = document.getElementsByClassName("player-item");
       for (var i = 0; i < elements.length; i++) {
-        id = getIdFromSrcName(elements[i].firstChild.src)
+        const id = getIdFromSrcName(elements[i].firstChild.src)
         hand += symbolFromId(id)
         if (i < 4) { hand += " " }
       }
       console.log("hand", hand)
 
-      srcname = document.getElementById("play_area_4").src
-      atout = symbolFromId(getIdFromSrcName(srcname))
+      const srcname4 = document.getElementById("play_area_4").src
+      const atout = symbolFromId(getIdFromSrcName(srcname4))
 
-      srcname = document.getElementById("play_area_1").src
-      opponent_move = symbolFromId(getIdFromSrcName(srcname))
-      call = suit_selection != ""
-      lock = talon_selected
-      swap = lastatout_selected
+      const srcname1 = document.getElementById("play_area_1").src
+      const opponent_move = symbolFromId(getIdFromSrcName(srcname1))
+      const call = suit_selection != ""
+      const lock = talon_selected
+      const swap = lastatout_selected
 
       setFooterMsg("...")
       const payload = {"hand": hand, "atout": atout, "oppmove": opponent_move, "lock": lock, "call": call, "swap": swap}
@@ -624,10 +651,10 @@ body {
         "suit_selection": suit_selection
       })
 
-      card = symbolFromId(getIdFromSrcName(document.getElementById(player_selection).src))
-      call = suit_selection != ""
-      lock = talon_selected
-      swap = lastatout_selected
+      const card = symbolFromId(getIdFromSrcName(document.getElementById(player_selection).src))
+      const call = suit_selection != ""
+      const lock = talon_selected
+      const swap = lastatout_selected
 
       setFooterMsg("...")
       const payload = {"card": card, "lock": lock, "call": call, "swap": swap}
@@ -643,7 +670,7 @@ body {
     }
 
     if (state == "drawcard") {
-      card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
+      const card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
 
       setFooterMsg("...")
       const payload = {"card": card}
@@ -669,10 +696,10 @@ body {
         "suit_selection": suit_selection
       })
 
-      card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
-      call = suit_selection != ""
-      lock = talon_selected
-      swap = lastatout_selected
+      const card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
+      const call = suit_selection != ""
+      const lock = talon_selected
+      const swap = lastatout_selected
 
       setFooterMsg("...")
       const payload = {"card": card, "lock": lock, "call": call, "swap": swap}

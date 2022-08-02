@@ -38,6 +38,8 @@ function card_to_name(card::Card)::String
 end
 
 function game_to_json(game::Game)
+    candidate_cards, _, cards_add = get_candidate_cards(game, player=game.perspective)
+    remaining_cards = add(candidate_cards, cards_add)
     hand = game.perspective == 1 ? game.s.hand1 : game.s.hand2
     opphand = game.perspective == 1 ? game.s.hand2 : game.s.hand1
     player_to_move = game.perspective == game.s.player_to_move ? "me" : "opponent"
@@ -51,7 +53,7 @@ function game_to_json(game::Game)
     end
 
     j = Dict(
-        "remaining_cards" => [card_to_name(card) for card in get_candidate_cards(game, player=game.perspective)[1]],
+        "remaining_cards" => [ card_to_name(card) for card in remaining_cards],
         "hand" => [card_to_name(card) for card in hand],
         "played_card" => card_to_name(game.s.played_card),
         "last_atout" => card_to_name(game.last_atout),
@@ -319,7 +321,3 @@ end
 
 @info "Start listening at localhost:8000"
 up(8000, async=false)
-
-# TODO: if atout swap selected -> make swapped card available for play
-# TODO: say winner and score
-# TODO: round losing prob frontend
