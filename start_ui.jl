@@ -128,7 +128,7 @@ route("/newgame") do
             "game" => game_to_json(game)
         )))
     catch e
-        @info e
+        @error e game_string move1 move2 draw_card
         return respond(json(Dict(
             "ok" => false,
             "error" => sprint(show, e)
@@ -187,8 +187,10 @@ function make_game_move()
 end
 
 route("/mymove") do
+    global game_string
     global move1
     global move2
+    global drawncard
     global game
 
     card = params(:card)
@@ -234,6 +236,7 @@ route("/mymove") do
                 "game" => game_to_json(game)
             )))
         catch e
+            @error e game_string move1 move2 draw_card
             return respond(json(Dict(
                 "ok" => false,
                 "error" => sprint(show, e)
@@ -243,7 +246,12 @@ route("/mymove") do
 end
 
 route("/drawcard") do
+    global game_string
+    global move1
+    global move2
     global drawncard
+    global game
+
     card = params(:card)
 
     @info "/drawcard" card
@@ -257,6 +265,7 @@ route("/drawcard") do
             "game" => game_to_json(game)
         )))
     catch e
+        @error e game_string move1 move2 draw_card
         return respond(json(Dict(
             "ok" => false,
             "error" => sprint(show, e)
@@ -265,8 +274,10 @@ route("/drawcard") do
 end
 
 route("/oppmove") do
+    global game_string
     global move1
     global move2
+    global drawncard
     global game
 
     card = params(:card)
@@ -311,6 +322,7 @@ route("/oppmove") do
                 "game" => game_to_json(game)
             )))
         catch e
+            @error e game_string move1 move2 draw_card
             return respond(json(Dict(
                 "ok" => false,
                 "error" => sprint(show, e)

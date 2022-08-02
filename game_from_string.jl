@@ -215,11 +215,11 @@ function game_from_str(s)
     remaining = ALLCARDS
     remaining = remove(remaining, hs[perspective])
     remaining = remove(remaining, played_cards)
-    if length(played_cards) < 20
+    if length(played_cards) < 10
         remaining = remove(remaining, last_atout)
     end
 
-    remaining = collect(remaining)
+    remaining = collect(Card, remaining)
     n_opp_hand = length(hs[perspective])
     if game.s.played_card != NOCARD
         if game.s.player_to_move == perspective
@@ -240,7 +240,7 @@ function game_from_str(s)
 
     talon = remaining
 
-    if length(remaining) == 0
+    if length(talon) == 0
         if game.s.lasttrick == perspective
             # opponent gets last_atout
             @assert last_atout != last_drawn_card "You won last trick. Cannot draw last atout."
@@ -249,12 +249,11 @@ function game_from_str(s)
         end
         n_talon = 0
     else
-        @assert (length(remaining) + 1) % 2 == 0
-        n_talon = length(remaining) + 1
+        @assert (length(talon) + 1) % 2 == 0
         insert!(talon, 1, last_atout)
+        n_talon = length(talon)
     end
 
-    @assert length(talon) == n_talon
     game.s.n_talon = n_talon
     game.s.talon = talon
 
@@ -325,6 +324,12 @@ end
 # QD : AD : JS #
 # * : * : *"""
 #
+# play without lock until talon is used up
+# s = """JS QH 10C 10H AS - 2 - JH - AC : 10H : QD #
+# KD : QD : QC #
+# AH : JS : KC #
+# KS a : AS : 10S #
+# 10D : 10C : KH"""
 #
 # begin
 #     s = """ -  -  -
