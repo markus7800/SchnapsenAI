@@ -34,3 +34,7 @@ s = """JS QH 10C 10H AS - 2 - JH - AC : 10H : QD #
 KD : QD : QC #
 AH : JS : KC #
 KS a : AS : 10S"""
+
+s = """JS QH 10C 10H AS - 2 - JH - AC : * : *"""
+
+get_best_move(g)

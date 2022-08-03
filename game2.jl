@@ -260,6 +260,8 @@ function eval_moves_full(game::Game)
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
         @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
     end
+    avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (length(opponent_hands) * length(movelist))
+    @printf("Average of %.0f Nodes per game.", avg_nodes)
     return movelist, losing_prob
 end
 
@@ -375,6 +377,8 @@ function eval_moves_prob(game::Game, n_iter::Int)
         asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
         @printf("%6s: %.4f ± %.4f %s\n", move, losing_prob[movenumber], get_bayesian_std(n_iter, n_lost[movenumber]), asterix)
     end
+    avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (n_iter * length(movelist))
+    @printf("Average of %.0f Nodes per game.", avg_nodes)
     return movelist, losing_prob
 end
 
