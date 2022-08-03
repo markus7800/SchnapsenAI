@@ -600,7 +600,8 @@ body {
           }
         }
         const prob = Math.round(r.losing_probability * 10000 + Number.EPSILON ) / 10000
-        setFooterMsg("Engine evaluation : loosing probability = " + prob + ".")
+        const score =  Math.round(r.expected_score * 10000 + Number.EPSILON ) / 10000
+        setFooterMsg("Engine evaluation : loosing probability = " + prob + ", expected score = " + score + ".")
       }
     })
   }

@@ -136,6 +136,7 @@ function eval_lock_moves(game::Game)
     u = Undo()
     ab = AlphaBeta(20)
     n_lost = zeros(Int, length(movelist))
+    n_score = zeros(Int, length(movelist), 7)
 
     for (movenumber, move) in enumerate(movelist)
         for (i, opphand) in enumerate(choose(candidate_cards, n_opponent_hand))
@@ -154,21 +155,27 @@ function eval_lock_moves(game::Game)
 
             if s.player_to_move == 1
                 n_lost[movenumber] += score < 0
+                n_score[movenumber, score ÷ 1000 + 4] += 1 # score ÷ 1000 = -3,-2,-1,0,1,2,3
             else
                 n_lost[movenumber] += score > 0
+                n_score[movenumber, (-score) ÷ 1000 + 4] += 1
             end
         end
     end
     losing_prob = n_lost ./ n_hands
-
-    losing_prob = losing_prob
+    expected_score = (n_score ./ n_hands) * [-3,-2,-1,0,1,2,3]
 
     min_losing_prob = minimum(losing_prob)
+    max_score = maximum(expected_score)
+
     for (movenumber, move) in enumerate(movelist)
-        asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix2 = max_score ≈ expected_score[movenumber] ? "*" : ""
+        @printf("%6s: losing probability: %.4f, expected score: %7.4f %s%s\n",
+            move, losing_prob[movenumber], expected_score[movenumber],
+            asterix1, asterix2)
     end
-    return movelist, losing_prob
+    return movelist, losing_prob, expected_score
 end
 
 import ProgressMeter
@@ -203,6 +210,7 @@ function eval_moves_full(game::Game)
     movelist = MoveList(movelist[mask])
 
     n_lost = zeros(Int, length(movelist), nthreads)
+    n_score = zeros(Int, length(movelist), 7, nthreads)
 
     opponent_hands = collect(choose(candidate_cards, n_opponent_hand))
 
@@ -242,8 +250,10 @@ function eval_moves_full(game::Game)
 
                 if s.player_to_move == 1
                     n_lost[movenumber, tid] += score < 0
+                    n_score[movenumber, score ÷ 1000 + 4, tid] += 1 # score ÷ 1000 = -3,-2,-1,0,1,2,3
                 else
                     n_lost[movenumber, tid] += score > 0
+                    n_score[movenumber, (-score) ÷ 1000 + 4, tid] += 1
                 end
             end
             ProgressMeter.next!(progressbar)
@@ -253,16 +263,24 @@ function eval_moves_full(game::Game)
     end
 
     n_lost = vec(sum(n_lost, dims=2))
+    n_score = sum(n_score, dims=3)[:,:,1] # (n_moves, 7)
 
     losing_prob = n_lost ./ n_games
+    expected_score = (n_score ./ n_games) * [-3,-2,-1,0,1,2,3]
+
     min_losing_prob = minimum(losing_prob)
+    max_score = maximum(expected_score)
+
     for (movenumber, move) in enumerate(movelist)
-        asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        @printf("%6s: %.4f %s\n", move, losing_prob[movenumber], asterix)
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix2 = max_score ≈ expected_score[movenumber] ? "*" : ""
+        @printf("%6s: losing probability: %.4f, expected score: %7.4f %s%s\n",
+            move, losing_prob[movenumber], expected_score[movenumber],
+            asterix1, asterix2)
     end
     avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (length(opponent_hands) * length(movelist))
     @printf("Average of %.0f Nodes per game.", avg_nodes)
-    return movelist, losing_prob
+    return movelist, losing_prob, expected_score
 end
 
 
@@ -279,18 +297,46 @@ end
 # -> std < 1 / 2√N
 1 / (2 * sqrt(2500))
 
+# Dirichlet(1,1,1,1,1,1,1) = Unif([x: x ∈ R^7, sum x = 1]) prior over probability of scores -3,...,3
+# Categorical(p1, ..., p7) conjugate
+# Dirichlet(1 + c_1, ..., 1 + c_7) posterior c_i number of observations in category i
+# P ∼ Dirichlet(α)
+# expected_score = P ⋅ (-3,-2,-1,0,1,2,3) = P ⋅ S
+# N + 7 = sum c_i + 7 = sum α_i
+# p = α / (N + 7) < 1
+# Cov(P_i, P_j) = ( δij p_i - p_i p_j ) / (N + 7 + 1)
+# |Cov(P_i, P_j)| < 1/N
+# var(expected_score) = sum_ij S_i S_j Cov(P_i, P_j) < 9 sum_ij Cov(P_i, P_j) < 9 * 7^2 / N
+
 function get_freq_std(n_iter::Int, n_lost::Int)
     N = n_iter
     s = n_lost
     return sqrt(1/(N-1) * (s*(1-s/N)^2 + (N-s)*(s/N)^2))
 end
 
+import Distributions: Beta, Dirichlet, var, std, cov
 function get_bayesian_std(n_iter::Int, n_lost::Int)
     N = n_iter
     s = n_lost
     α = 1 + s
     β = 1 + N - s
-    return sqrt(α * β / ((α + β)^2 * (α + β + 1)))
+    return std(Beta(α, β))
+end
+
+function get_bayesian_score_estimate(n_score::Array{Int, 2})
+    n_moves, _ = size(n_score)
+    S = [s1 * s2 for s1 in -3:3, s2 in -3:3]
+    score_means = zeros(n_moves)
+    score_stds = zeros(n_moves)
+    for i in 1:n_moves
+        d = Dirichlet(n_score[i, :] .+ 1)
+        m = (-3:3)'mean(d)
+        C = cov(d)
+        v = sum(S .* C)
+        score_means[i] = m
+        score_stds[i] = sqrt(v)
+    end
+    return score_means, score_stds
 end
 
 function eval_moves_prob(game::Game, n_iter::Int)
@@ -325,6 +371,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
     sampled_cards_copies = [copy(candidate_cards) for _ in 1:nthreads]
 
     n_lost = zeros(Int, length(movelist), nthreads)
+    n_score = zeros(Int, length(movelist), 7, nthreads)
     progressbar = ProgressMeter.Progress(n_iter)
     Threads.@threads for iter in 1:n_iter
         tid = Threads.threadid()
@@ -361,8 +408,10 @@ function eval_moves_prob(game::Game, n_iter::Int)
 
             if s.player_to_move == 1
                 n_lost[movenumber, tid] += score < 0
+                n_score[movenumber, score ÷ 1000 + 4, tid] += 1 # score ÷ 1000 = -3,-2,-1,0,1,2,3
             else
                 n_lost[movenumber, tid] += score > 0
+                n_score[movenumber, (-score) ÷ 1000 + 4, tid] += 1
             end
         end
 
@@ -370,16 +419,28 @@ function eval_moves_prob(game::Game, n_iter::Int)
     end
 
     n_lost = vec(sum(n_lost, dims=2))
+    n_score = sum(n_score, dims=3)[:,:,1] # (n_moves, 7)
+
     losing_prob = n_lost ./ n_iter
+    score_means, score_stds = get_bayesian_score_estimate(n_score)
 
     min_losing_prob = minimum(losing_prob)
+    max_score = maximum(score_means)
     for (movenumber, move) in enumerate(movelist)
-        asterix = losing_prob[movenumber] ≈ min_losing_prob ? "*" : ""
-        @printf("%6s: %.4f ± %.4f %s\n", move, losing_prob[movenumber], get_bayesian_std(n_iter, n_lost[movenumber]), asterix)
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix2 = max_score ≈ score_means[movenumber] ? "*" : ""
+
+        @printf("%6s: losing probability %.4f ± %.4f, expected score %7.4f ± %.4f %s%s\n",
+            move,
+            losing_prob[movenumber], get_bayesian_std(n_iter, n_lost[movenumber]),
+            score_means[movenumber], score_stds[movenumber],
+            asterix1, asterix2)
     end
+
     avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (n_iter * length(movelist))
     @printf("Average of %.0f Nodes per game.", avg_nodes)
-    return movelist, losing_prob
+
+    return movelist, losing_prob, score_means
 end
 
 function best_AB_move(game::Game)
@@ -388,7 +449,7 @@ function best_AB_move(game::Game)
     get_moves!(movelist, s)
     u = Undo()
     ab = AlphaBeta(20)
-    scores = zeros(length(movelist))
+    scores = zeros(Int, length(movelist))
     best_score = go(ab, s)
     for (movenumber, move) in enumerate(movelist)
         make_move!(s, move, u)
@@ -408,32 +469,34 @@ end
 
 
 function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
-    lock_movelist, lock_losing_prob = eval_lock_moves(game)
+    lock_movelist, lock_losing_prob, lock_expected_score = eval_lock_moves(game)
 
     if length(lock_movelist) > 0 && (
             is_locked(game.s) ||
             (minimum(lock_losing_prob) < lock_prob_threshold && length(game.played_cards) ≤ 4)
         )
         # risk early lock without looking at other moves, otherwise always full search
-        movelist, losing_prob = lock_movelist, lock_losing_prob
+        movelist, losing_prob, expected_score = lock_movelist, lock_losing_prob, lock_expected_score
     else
         if length(game.played_cards) ≤ 2
             @info "Evaluate 2_500 random games (< 0.01 deviation)."
-            movelist, losing_prob = eval_moves_prob(game, 2_500)
+            movelist, losing_prob, expected_score = eval_moves_prob(game, 2_500)
         elseif length(game.played_cards) == 3
             @info "Evaluate 10_000 random games (< 0.005 deviation)."
-            movelist, losing_prob = eval_moves_prob(game, 10_000)
+            movelist, losing_prob, expected_score = eval_moves_prob(game, 10_000)
         else
             @info "Evaluate full."
-            movelist, losing_prob = eval_moves_full(game)
+            movelist, losing_prob, expected_score = eval_moves_full(game)
         end
         movelist = vcat(vec(movelist), vec(lock_movelist))
         losing_prob = vcat(losing_prob, lock_losing_prob)
+        expected_score = vcat(expected_score, lock_expected_score)
     end
 
     amin = argmin(losing_prob)
     move = movelist[amin]
     prob = losing_prob[amin]
+    score = expected_score[amin]
 
-    return move, prob
+    return move, prob, score
 end

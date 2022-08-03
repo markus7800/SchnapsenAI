@@ -149,10 +149,10 @@ route("/engine") do
         )))
     end
 
-    move, prob = get_best_move(game)
+    move, prob, score = get_best_move(game)
 
     card = card_to_name(move.card)
-    @info "Best move: " card move.lock move.call move.swap prob
+    @info "Best move: " card move.lock move.call move.swap prob score
 
     return respond(json(Dict(
         "ok" => true,
@@ -160,7 +160,8 @@ route("/engine") do
         "lock" => move.lock,
         "call" => move.call,
         "swap" => move.swap,
-        "losing_probability" => prob
+        "losing_probability" => prob,
+        "expected_score" => score
     )))
 end
 
