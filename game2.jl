@@ -126,7 +126,7 @@ function eval_lock_moves(game::Game)
     mask = [is_locked(s) || m.lock for m in movelist]
     movelist = MoveList(movelist[mask])
     if length(movelist) == 0
-        return movelist, Float64[]
+        return movelist, Float64[], Float64[]
     end
 
     n_hands = binomial(length(candidate_cards), n_opponent_hand)
@@ -169,7 +169,7 @@ function eval_lock_moves(game::Game)
     max_score = maximum(expected_score)
 
     for (movenumber, move) in enumerate(movelist)
-        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : " "
         asterix2 = max_score ≈ expected_score[movenumber] ? "*" : ""
         @printf("%6s: losing probability: %.4f, expected score: %7.4f %s%s\n",
             move, losing_prob[movenumber], expected_score[movenumber],
@@ -272,7 +272,7 @@ function eval_moves_full(game::Game)
     max_score = maximum(expected_score)
 
     for (movenumber, move) in enumerate(movelist)
-        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : " "
         asterix2 = max_score ≈ expected_score[movenumber] ? "*" : ""
         @printf("%6s: losing probability: %.4f, expected score: %7.4f %s%s\n",
             move, losing_prob[movenumber], expected_score[movenumber],
@@ -427,7 +427,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
     min_losing_prob = minimum(losing_prob)
     max_score = maximum(score_means)
     for (movenumber, move) in enumerate(movelist)
-        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : ""
+        asterix1 = min_losing_prob ≈ losing_prob[movenumber] ? "*" : " "
         asterix2 = max_score ≈ score_means[movenumber] ? "*" : ""
 
         @printf("%6s: losing probability %.4f ± %.4f, expected score %7.4f ± %.4f %s%s\n",
@@ -458,12 +458,17 @@ function best_AB_move(game::Game)
         scores[movenumber] = score
     end
 
+    if game.perspective == 1
+        best = argmax(scores)
+    else
+        best = argmin(scores)
+    end
     for (movenumber, move) in enumerate(movelist)
         asterix = scores[movenumber] == best_score ? "*" : ""
         @printf("%6s: %7.1f %s\n", move, scores[movenumber], asterix)
     end
     println("Best score: $best_score; player to move $(s.player_to_move)")
-    return movelist, scores
+    return movelist[best], scores[best]
 end
 
 

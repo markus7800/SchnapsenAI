@@ -100,7 +100,7 @@ body {
     </div>
   </div>
   <div class="remainingcard5">
-    <div class="card-container">
+    <div class="card-container", id="remaing_card_div">
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_jack" src="cards/clubs_jack.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_queen" src="cards/clubs_queen.png"></div>
       <div class="remainingcard-item"><img onclick="clickCard(this.id)" id="clubs_king" src="cards/clubs_king.png"></div>
@@ -137,7 +137,7 @@ body {
   </div>
   <div class="footer6" id="footer">Footer</div>
   <div class="footer7">
-    <!-- <button type="button" name="new" onclick="location.reload()">New Game</button> -->
+    <button type="button" name="new" onclick="newGameAgainstEngine()">New Game Against Engine</button>
   </div>
 </div>
 
@@ -146,6 +146,7 @@ body {
 
 
   var state = "newgame"
+  var againstEngine = false
 
   var player_selection = ""
   var card_selection = ""
@@ -467,6 +468,10 @@ body {
     setFooterMsg("Input your move.  Click talon for lock, atout for swap, suit for call, your hand for played card. Click 'Run Engine' for best move.")
   }
 
+  function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   function oppmove() {
     console.log("oppmove")
     document.getElementById("engine_button").disabled = true
@@ -474,9 +479,27 @@ body {
     state = "oppmove"
     deselectAll()
     disableClick(allClassNames)
-    enableClick(["lastatout-item", "remainingcard-item", "suit-item", "talon-item"])
 
-    setFooterMsg("Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card.")
+    if (againstEngine) {
+      setFooterMsg("Wait for engine move ... ")
+      console.log("/oppmoveengine")
+      $.get("/oppmoveengine", async function(response) {
+        r = JSON.parse(response)
+        console.log(r)
+        if (r.ok) {
+          if (r.game.hand.length == r.game.n_opphand) {
+            setCard("play_area_2", r.card)
+            setFooterMsg("")
+            await sleep(3000)
+          }
+          setupGameFromJson(r.game)
+        }
+      })
+
+    } else {
+      enableClick(["lastatout-item", "remainingcard-item", "suit-item", "talon-item"])
+      setFooterMsg("Input opponent move. Click talon for lock, atout for swap, suit for call, remaining cards for played card.")
+    }
   }
 
   function drawcard() {
@@ -526,11 +549,13 @@ body {
     }
 
     setCard("play_area_1", gamejson.played_card)
+    setCard("play_area_2", "no_card")
     if (gamejson.is_locked) {
       setCard("play_area_4", "no_card")
       setCard("play_area_5", gamejson.last_atout)
     } else {
       setCard("play_area_4", gamejson.last_atout)
+      setCard("play_area_5", "unkown_card")
     }
 
     if (gamejson.n_talon == 0) {
@@ -606,6 +631,32 @@ body {
     })
   }
 
+  function newGameAgainstEngine() {
+    state = "newgameagainstengine"
+    againstEngine = true
+
+    console.log("newgameagainstengine")
+    deselectAll()
+
+    //const remainingcard_div = document.getElementById("remaing_card_div")
+    //remainingcard_div.style.display = "none";
+
+    const elements = document.getElementsByClassName("remainingcard-item");
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].style.visibility = "hidden"
+    }
+    const element = document.getElementById("unkown_card")
+    element.style.visibility = "hidden"
+
+    console.log("/newgameagainstengine")
+    $.get("/newgameagainstengine", function(response) {
+      r = JSON.parse(response)
+      if (r.ok) {
+        setupGameFromJson(r.game)
+      }
+    })
+  }
+
   function confirm() {
     console.log("confirm", state)
 
@@ -659,8 +710,15 @@ body {
 
       setFooterMsg("...")
       const payload = {"card": card, "lock": lock, "call": call, "swap": swap}
-      console.log("/mymove", payload)
-      $.get("/mymove", payload, function(response) {
+      var endpoint = ""
+      if (againstEngine) {
+        endpoint = "/mymoveagainstengine"
+      } else {
+        endpoint = "/mymove"
+      }
+
+      console.log(endpoint, payload)
+      $.get(endpoint, payload, function(response) {
         r = JSON.parse(response)
         console.log(r)
         if (r.ok) {

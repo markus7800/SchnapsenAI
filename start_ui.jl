@@ -286,6 +286,7 @@ route("/oppmove") do
     call = parse(Bool, params(:call))
     swap = parse(Bool, params(:swap))
 
+    @info "/oppmove" card lock swap call
 
     move = card
     if (lock || call || swap)
@@ -330,6 +331,90 @@ route("/oppmove") do
             )))
         end
     end
+end
+
+# === Game against Engine
+
+route("/newgameagainstengine") do
+    global game
+
+    @info "/newgameagainstengine"
+
+    seed = abs(rand(Int))
+    perspective = rand(Bool) ? 1 : 2
+    game = Game(seed, perspective)
+
+    return respond(json(Dict(
+        "ok" => true,
+        "game" => game_to_json(game)
+    )))
+end
+
+route("/mymoveagainstengine") do
+    global game
+
+    card = params(:card)
+    lock = parse(Bool, params(:lock))
+    call = parse(Bool, params(:call))
+    swap = parse(Bool, params(:swap))
+
+    @info "/mymoveagainstengine" card lock swap call
+
+    move = card
+    if (lock || call || swap)
+        move *= " "
+    end
+    if lock
+        move *= "z"
+    end
+    if call
+        move *= "a"
+    end
+    if swap
+        move *= "t"
+    end
+
+    try
+        play_move!(game, move)
+    catch e
+        return respond(json(Dict(
+            "ok" => false,
+            "error" => sprint(show, e)
+        )))
+    end
+
+    return respond(json(Dict(
+        "ok" => true,
+        "game" => game_to_json(game)
+    )))
+end
+
+route("/oppmoveengine") do
+    global game
+
+    perspective = game.perspective
+
+    # get move from opponent perspective
+    game.perspective = perspective == 1 ? 2 : 1
+    move, prob, score = get_best_move(game)
+    # move, score = best_AB_move(game)
+    #prob = 0.
+
+    game.perspective = perspective
+
+    card = card_to_name(move.card)
+    @info "Best move: " card move.lock move.call move.swap prob score
+
+    play_move!(game, move)
+
+    return respond(json(Dict(
+        "ok" => true,
+        "card" => card,
+        "lock" => move.lock,
+        "call" => move.call,
+        "swap" => move.swap,
+        "game" => game_to_json(game)
+    )))
 end
 
 @info "Start listening at localhost:8000"
