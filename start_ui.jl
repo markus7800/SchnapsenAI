@@ -5,7 +5,7 @@ import Genie.Router: route
 import Genie.Renderer: respond
 import JSON: json
 
-include("game2.jl")
+include("game.jl")
 
 game_string = ""
 move1 = "*"

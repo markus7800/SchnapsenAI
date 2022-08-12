@@ -31,8 +31,8 @@ function game_from_str(s)
         h1 = NOCARDS
     end
     hs = [h1, h2]
-    println(hs)
-    println("last_atout: ", last_atout)
+    # println(hs)
+    # println("last_atout: ", last_atout)
 
     played_cards = NOCARDS
 
@@ -100,7 +100,7 @@ function game_from_str(s)
                 break
             end
             m1, m2, d = split(step, " : ")
-            println(i, ": ", m1, ",", m2, ",", d)
+            # println(i, ": ", m1, ",", m2, ",", d)
             if m1 == "*" && m2 == "*" && d == "*"
                 break
             end
@@ -203,7 +203,7 @@ function game_from_str(s)
                 game.s.played_card = NOCARD
             end
 
-            println("player_hand: ", hs[perspective], ", played_cards: ", played_cards, ", last_atout: ", last_atout, ", player_to_move: ", player_to_move)
+            # println("player_hand: ", hs[perspective], ", played_cards: ", played_cards, ", last_atout: ", last_atout, ", player_to_move: ", player_to_move)
         end
 
         game.s.player_to_move = player_to_move
@@ -234,9 +234,9 @@ function game_from_str(s)
     opp_hand = reduce(|, remaining[1:n_opp_hand], init=NOCARDS)
 
     remaining = remaining[n_opp_hand+1:end]
-    println()
-    println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
-    println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
+    # println()
+    # println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
+    # println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
 
     talon = remaining
 
@@ -275,7 +275,7 @@ function game_from_str(s)
     @assert game.s.hand1.cs & talon_cards.cs == 0
     @assert game.s.hand2.cs & talon_cards.cs == 0
 
-    println()
+    # println()
 
     return game
 end
