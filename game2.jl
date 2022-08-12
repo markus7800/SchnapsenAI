@@ -279,7 +279,7 @@ function eval_moves_full(game::Game)
             asterix1, asterix2)
     end
     avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (length(opponent_hands) * length(movelist))
-    @printf("Average of %.0f Nodes per game.", avg_nodes)
+    @printf("Average of %.0f Nodes per game.\n", avg_nodes)
     return movelist, losing_prob, expected_score
 end
 
@@ -438,7 +438,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
     end
 
     avg_nodes = sum(ab.n_nodes for ab in ab_copies) / (n_iter * length(movelist))
-    @printf("Average of %.0f Nodes per game.", avg_nodes)
+    @printf("Average of %.0f Nodes per game.\n", avg_nodes)
 
     return movelist, losing_prob, score_means
 end
