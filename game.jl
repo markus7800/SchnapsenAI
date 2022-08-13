@@ -315,12 +315,23 @@ function get_freq_std(n_iter::Int, n_lost::Int)
 end
 
 import Distributions: Beta, Dirichlet, var, std, cov
-function get_bayesian_std(n_iter::Int, n_lost::Int)
+function get_bayesian_losing_estimate(n_iter::Int, n_lost::Vector{Int})
+    n = length(n_lost)
+    losing_probs = zeros(n)
+    losing_probs_std = zeros(n)
+
     N = n_iter
-    s = n_lost
-    α = 1 + s
-    β = 1 + N - s
-    return std(Beta(α, β))
+
+    for i in 1:n
+        s = n_lost[i]
+        α = 1 + s
+        β = 1 + N - s
+        b = Beta(α, β)
+        losing_probs[i] = mean(b)
+        losing_probs_std[i] = std(b)
+    end
+
+    return losing_probs, losing_probs_std
 end
 
 function get_bayesian_score_estimate(n_score::Array{Int, 2})
@@ -421,7 +432,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
     n_lost = vec(sum(n_lost, dims=2))
     n_score = sum(n_score, dims=3)[:,:,1] # (n_moves, 7)
 
-    losing_prob = n_lost ./ n_iter
+    losing_prob, losing_probs_std = get_bayesian_losing_estimate(n_iter, n_lost)
     score_means, score_stds = get_bayesian_score_estimate(n_score)
 
     min_losing_prob = minimum(losing_prob)
@@ -432,7 +443,7 @@ function eval_moves_prob(game::Game, n_iter::Int)
 
         @printf("%6s: losing probability %.4f ± %.4f, expected score %7.4f ± %.4f %s%s\n",
             move,
-            losing_prob[movenumber], get_bayesian_std(n_iter, n_lost[movenumber]),
+            losing_prob[movenumber], losing_probs_std[movenumber],
             score_means[movenumber], score_stds[movenumber],
             asterix1, asterix2)
     end

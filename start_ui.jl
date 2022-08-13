@@ -334,11 +334,14 @@ route("/oppmove") do
 end
 
 # === Game against Engine
+using Dates
 
 route("/newgameagainstengine") do
     global game
 
     @info "/newgameagainstengine"
+
+    Random.seed!(Int(floor(datetime2unix(now()))))
 
     seed = abs(rand(Int))
     perspective = rand(Bool) ? 1 : 2
