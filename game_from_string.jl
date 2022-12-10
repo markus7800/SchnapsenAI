@@ -33,6 +33,7 @@ function game_from_str(s)
     hs = [h1, h2]
     # println(hs)
     # println("last_atout: ", last_atout)
+    atout_jack = Card(game.s.atout, JACK)
 
     played_cards = NOCARDS
 
@@ -42,19 +43,24 @@ function game_from_str(s)
             @assert !(m.card in played_cards) "Card $(m.card) was already played ($(played_cards))."
 
             if player == perspective
-                @assert m.card in hs[perspective] "Played card $(m.card) is not in your hand $(hs[perspective])."
+                if !m.swap
+                    @assert m.card in hs[perspective] "Played card $(m.card) is not in your hand $(hs[perspective])."
+                else
+                    @assert (m.card in hs[perspective] || m.card == last_atout) "Played card $(m.card) is not in your hand $(hs[perspective]) or last atout."
+
+                end
             else
                 @assert !(m.card in hs[perspective]) "Opponent played card $(m.card) that is in your hand $(hs[perspective])."
             end
 
             if m.swap
-                atout_jack = Card(game.s.atout, JACK)
                 @assert last_atout != atout_jack "Cannot swap if last atout is not jack $(last_atout)."
                 if player == perspective
                     @assert atout_jack in hs[perspective] "Atout jack is not in your hand $(hs[perspective])."
                 else
                     @assert !(atout_jack in hs[perspective]) "Oppenent tried to swap but you have atout_jack $(hs[perspective])."
                 end
+                @assert m.card != atout_jack "Cannot play atout jack if swapped."
 
                 game.atout_swap = last_atout
                 game.atout_swap_player = player
@@ -73,6 +79,7 @@ function game_from_str(s)
                 else
                     game.s.call2 += v
                 end
+                @assert face(m.card) == KING || face(m.card) == QUEEN "You have to play king or queen when call."
 
                 spouse = face(m.card) == KING ? QUEEN : KING
                 spouse = Card(suit(m.card), spouse)

@@ -703,10 +703,21 @@ body {
         "suit_selection": suit_selection
       })
 
-      const card = symbolFromId(getIdFromSrcName(document.getElementById(player_selection).src))
       const call = suit_selection != ""
       const lock = talon_selected
       const swap = lastatout_selected
+
+      var card_el = document.getElementById(player_selection)
+      if (card_el === null) {
+        if (swap) {
+          // play swapped card
+          card_el =  document.getElementById("play_area_4")
+          if (card_el === null) {
+            setFooterMsg("Invalid card selection.")
+          }
+        }
+      }
+      const card = symbolFromId(getIdFromSrcName(card_el.src))
 
       setFooterMsg("...")
       const payload = {"card": card, "lock": lock, "call": call, "swap": swap}
@@ -724,6 +735,8 @@ body {
         if (r.ok) {
           setupGameFromJson(r.game)
           deselectAll()
+        } else {
+          setFooterMsg(r.error)
         }
       });
     }
