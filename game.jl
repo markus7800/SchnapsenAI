@@ -484,6 +484,9 @@ end
 
 
 
+const N_ITER_1 = Threads.nthreads() < 8 ? 1_000 : 2_500 # < 0.01 deviation
+const N_ITER_2 = Threads.nthreads() < 8 ? 5_000 : 10_000 # < 0.005 deviation
+
 function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
     lock_movelist, lock_losing_prob, lock_expected_score = eval_lock_moves(game)
 
@@ -495,11 +498,11 @@ function get_best_move(game::Game, lock_prob_threshold::Float64=0.25)
         movelist, losing_prob, expected_score = lock_movelist, lock_losing_prob, lock_expected_score
     else
         if length(game.played_cards) ≤ 2
-            @info "Evaluate 2_500 random games (< 0.01 deviation)."
-            movelist, losing_prob, expected_score = eval_moves_prob(game, 2_500)
+            @info "Evaluate $N_ITER_1 random games."
+            movelist, losing_prob, expected_score = eval_moves_prob(game, N_ITER_1)
         elseif length(game.played_cards) == 3
-            @info "Evaluate 10_000 random games (< 0.005 deviation)."
-            movelist, losing_prob, expected_score = eval_moves_prob(game, 10_000)
+            @info "Evaluate $N_ITER_2 random games."
+            movelist, losing_prob, expected_score = eval_moves_prob(game, N_ITER_2)
         else
             @info "Evaluate full."
             movelist, losing_prob, expected_score = eval_moves_full(game)
