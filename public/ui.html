@@ -688,6 +688,8 @@ body {
         if (r.ok) {
           setupGameFromJson(r.game)
           deselectAll()
+        } else {
+          setFooterMsg(r.error)
         }
       });
     }
@@ -742,6 +744,7 @@ body {
     }
 
     if (state == "drawcard") {
+      console.log("drawcard", card_selection, document.getElementById(card_selection))
       const card = symbolFromId(getIdFromSrcName(document.getElementById(card_selection).src))
 
       setFooterMsg("...")
@@ -753,6 +756,8 @@ body {
         if (r.ok) {
           setupGameFromJson(r.game)
           deselectAll()
+        } else {
+          setFooterMsg(r.error)
         }
       });
     }
@@ -782,6 +787,8 @@ body {
         if (r.ok) {
           setupGameFromJson(r.game)
           deselectAll()
+        } else {
+          setFooterMsg(r.error)
         }
       });
     }

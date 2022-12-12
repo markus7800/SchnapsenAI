@@ -1,3 +1,73 @@
+
+# s = "KC 10C JS 10D 10H - 1 - AS - ";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : * : *";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # * : AC : *";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # * : JC : *";
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC a : * : *"; # should fail
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : * : *";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : JC : *"; # should fail
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : KH a : *"; # should fail
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : QH : KH"; # should fail
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : QH : *";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : *"; # should fail
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : * : *";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : JS";
+#
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : AH"; # should fail, last trick by opponent
+# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : KC"; # should fail, card already played
+#
+# game_from_str(s)
+#
+# s = "KC 10C JS 10D 10H - 2 - AS - KC t : * : *"; # should fail, opponent plays my card
+# s = "KS 10C JS 10D 10H - 2 - AS - KC t : * : *"; # should fail, I have atoutjack
+#
+# s = "KS 10C JC 10D 10H - 2 - AS - KC t : * : *";
+#
+# s = """KC 10C JS 10D 10H - 1 - AS -
+# KC t : KS : QD #
+# 10C : AC : JD #
+# AS : JC : QC #
+# QC : QH : KH #
+# QD : AD : JS #
+# * : * : *"""
+#
+# play without lock until talon is used up
+# s = """JS QH 10C 10H AS - 2 - JH - AC : 10H : QD #
+# KD : QD : QC #
+# AH : JS : KC #
+# KS a : AS : 10S #
+# 10D : 10C : KH"""
+#
+# begin
+#     s = """ -  -  -
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : * #
+#     * : * : *"""
+#     game_from_str(s)
+#     println(game)
+# end
+#
+
+
 "initial_hand - perspective - last_atout - card_player_1 : card_player_2 : drawn_card # ..."
 function game_from_str(s)
     s = replace(s, "\n" => " ")
@@ -107,7 +177,7 @@ function game_from_str(s)
                 break
             end
             m1, m2, d = split(step, " : ")
-            # println(i, ": ", m1, ",", m2, ",", d)
+            println(i, ": ", m1, ",", m2, ",", d)
             if m1 == "*" && m2 == "*" && d == "*"
                 break
             end
@@ -210,7 +280,7 @@ function game_from_str(s)
                 game.s.played_card = NOCARD
             end
 
-            # println("player_hand: ", hs[perspective], ", played_cards: ", played_cards, ", last_atout: ", last_atout, ", player_to_move: ", player_to_move)
+            println("player_hand: ", hs[perspective], ", played_cards: ", played_cards, ", last_atout: ", last_atout, ", player_to_move: ", player_to_move)
         end
 
         game.s.player_to_move = player_to_move
@@ -222,7 +292,8 @@ function game_from_str(s)
     remaining = ALLCARDS
     remaining = remove(remaining, hs[perspective])
     remaining = remove(remaining, played_cards)
-    if length(played_cards) < 10
+    println("length(played_cards) ", length(played_cards))
+    if is_locked(game.s) || length(played_cards) < 10
         remaining = remove(remaining, last_atout)
     end
 
@@ -241,9 +312,9 @@ function game_from_str(s)
     opp_hand = reduce(|, remaining[1:n_opp_hand], init=NOCARDS)
 
     remaining = remaining[n_opp_hand+1:end]
-    # println()
-    # println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
-    # println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
+    println()
+    println("player_hand: ", hs[perspective], " ", length(hs[perspective]), ", played_cards: ", played_cards, " ", length(played_cards), ", last_atout: ", last_atout)
+    println("opp_hand: ", opp_hand, " ", length(opp_hand), ", remaining: ", remaining, " ", length(remaining))
 
     talon = remaining
 
@@ -256,7 +327,9 @@ function game_from_str(s)
         end
         n_talon = 0
     else
-        @assert (length(talon) + 1) % 2 == 0
+        if !is_locked(game.s)
+            @assert (length(talon) + 1) % 2 == 0
+        end
         insert!(talon, 1, last_atout)
         n_talon = length(talon)
     end
@@ -272,6 +345,10 @@ function game_from_str(s)
         game.s.hand2 = hs[perspective]
     end
 
+    # println()
+    # println(game.s)
+    # println()
+
     cards = played_cards
     cards = add(cards, game.s.hand1)
     cards = add(cards, game.s.hand2)
@@ -282,75 +359,6 @@ function game_from_str(s)
     @assert game.s.hand1.cs & talon_cards.cs == 0
     @assert game.s.hand2.cs & talon_cards.cs == 0
 
-    # println()
 
     return game
 end
-
-# s = "KC 10C JS 10D 10H - 1 - AS - ";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : * : *";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # * : AC : *";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # * : JC : *";
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC a : * : *"; # should fail
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : * : *";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : JC : *"; # should fail
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : KH a : *"; # should fail
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : QH : KH"; # should fail
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC z : QH : *";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : *"; # should fail
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : * : *";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : JS";
-#
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : AH"; # should fail, last trick by opponent
-# s = "KC 10C JS 10D 10H - 1 - AS - KC t : KS : QD # 10C : AC : JD # AS : JC : QC # QC : QH : KH # QD : AD : KC"; # should fail, card already played
-#
-# game_from_str(s)
-#
-# s = "KC 10C JS 10D 10H - 2 - AS - KC t : * : *"; # should fail, opponent plays my card
-# s = "KS 10C JS 10D 10H - 2 - AS - KC t : * : *"; # should fail, I have atoutjack
-#
-# s = "KS 10C JC 10D 10H - 2 - AS - KC t : * : *";
-#
-# s = """KC 10C JS 10D 10H - 1 - AS -
-# KC t : KS : QD #
-# 10C : AC : JD #
-# AS : JC : QC #
-# QC : QH : KH #
-# QD : AD : JS #
-# * : * : *"""
-#
-# play without lock until talon is used up
-# s = """JS QH 10C 10H AS - 2 - JH - AC : 10H : QD #
-# KD : QD : QC #
-# AH : JS : KC #
-# KS a : AS : 10S #
-# 10D : 10C : KH"""
-#
-# begin
-#     s = """ -  -  -
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : * #
-#     * : * : *"""
-#     game_from_str(s)
-#     println(game)
-# end
-#

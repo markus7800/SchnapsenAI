@@ -225,6 +225,9 @@ route("/mymove") do
     if draw_card
         game_json = game_to_json(game)
         game_json["next"] = "drawcard"
+        if !is_locked(game.s) && length(game.s.talon) == 2
+            push!(game_json["remaining_cards"], game_json["last_atout"])
+        end
         return respond(json(Dict(
             "ok" => true,
             "game" => game_json
@@ -266,7 +269,7 @@ route("/drawcard") do
             "game" => game_to_json(game)
         )))
     catch e
-        @error e game_string move1 move2 draw_card
+        @error e game_string move1 move2 drawncard
         return respond(json(Dict(
             "ok" => false,
             "error" => sprint(show, e)
@@ -312,6 +315,12 @@ route("/oppmove") do
     if draw_card
         game_json = game_to_json(game)
         game_json["next"] = "drawcard"
+        if !is_locked(game.s) && length(game.s.talon) == 2
+            push!(game_json["remaining_cards"], game_json["last_atout"])
+        end
+        c = card_to_name(stringtocard(card))
+        filter!(e-> e != c, game_json["remaining_cards"])
+
         return respond(json(Dict(
             "ok" => true,
             "game" => game_json
