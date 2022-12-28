@@ -195,7 +195,9 @@ function game_from_str(s)
                     if stringtomove(m1).lock || stringtomove(m2).lock
                         @assert d == "*" "Game is just locked, you cannot draw card."
                     else
-                        @assert d != "*" "Trick complete, must draw card."
+                        if game.s.n_talon > 0
+                            @assert d != "*" "Trick complete, must draw card."
+                        end
                     end
                 end
             end
